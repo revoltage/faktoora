@@ -23,18 +23,48 @@ export const analyzeInvoice = internalAction({
     const pdfBlob = await response.blob();
     const pdfBuffer = await pdfBlob.arrayBuffer();
 
-    const [dateResult, senderResult] = await Promise.all([
-      extractInvoiceDate(pdfBuffer),
-      extractInvoiceSender(pdfBuffer),
-    ]);
+    const now = Date.now();
+    
+    try {
+      const [dateResult, senderResult] = await Promise.all([
+        extractInvoiceDate(pdfBuffer),
+        extractInvoiceSender(pdfBuffer),
+      ]);
 
-    await ctx.runMutation(internal.invoices.updateInvoiceAnalysis, {
-      monthKey: args.monthKey,
-      storageId: args.storageId,
-      userId: args.userId,
-      date: dateResult,
-      sender: senderResult,
-    });
+      await ctx.runMutation(internal.invoices.updateInvoiceAnalysis, {
+        monthKey: args.monthKey,
+        storageId: args.storageId,
+        userId: args.userId,
+        date: {
+          value: dateResult,
+          error: null,
+          lastUpdated: now,
+        },
+        sender: {
+          value: senderResult,
+          error: null,
+          lastUpdated: now,
+        },
+      });
+    } catch (error) {
+      console.error("🔍 Error in invoice analysis:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      await ctx.runMutation(internal.invoices.updateInvoiceAnalysis, {
+        monthKey: args.monthKey,
+        storageId: args.storageId,
+        userId: args.userId,
+        date: {
+          value: null,
+          error: errorMessage,
+          lastUpdated: now,
+        },
+        sender: {
+          value: null,
+          error: errorMessage,
+          lastUpdated: now,
+        },
+      });
+    }
   },
 });
 

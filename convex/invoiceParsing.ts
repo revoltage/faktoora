@@ -19,6 +19,8 @@ export const parseInvoiceText = internalAction({
       return;
     }
 
+    const now = Date.now();
+    
     try {
       const response = await fetch(pdfUrl);
       const pdfBlob = await response.blob();
@@ -30,16 +32,23 @@ export const parseInvoiceText = internalAction({
         monthKey: args.monthKey,
         storageId: args.storageId,
         userId: args.userId,
-        parsedText,
+        parsedText: {
+          value: parsedText,
+          error: null,
+          lastUpdated: now,
+        },
       });
     } catch (error) {
       console.error("📝 Error parsing invoice text:", error);
-      // Still update with null to mark as attempted
       await ctx.runMutation(internal.invoices.updateInvoiceParsing, {
         monthKey: args.monthKey,
         storageId: args.storageId,
         userId: args.userId,
-        parsedText: null,
+        parsedText: {
+          value: null,
+          error: error instanceof Error ? error.message : String(error),
+          lastUpdated: now,
+        },
       });
     }
   },

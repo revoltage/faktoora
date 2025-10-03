@@ -3,6 +3,12 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 
+const analysisResult = v.object({
+  value: v.union(v.string(), v.null()),
+  error: v.union(v.string(), v.null()),
+  lastUpdated: v.union(v.number(), v.null()),
+});
+
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
@@ -88,11 +94,23 @@ export const addIncomingInvoice = mutation({
       fileName: args.fileName,
       uploadedAt: Date.now(),
       analysis: {
-        date: null,
-        sender: null,
+        date: {
+          value: null,
+          error: null,
+          lastUpdated: null,
+        },
+        sender: {
+          value: null,
+          error: null,
+          lastUpdated: null,
+        },
       },
       parsing: {
-        parsedText: null,
+        parsedText: {
+          value: null,
+          error: null,
+          lastUpdated: null,
+        },
       },
     };
 
@@ -230,8 +248,8 @@ export const updateInvoiceAnalysis = internalMutation({
     monthKey: v.string(),
     storageId: v.id("_storage"),
     userId: v.id("users"),
-    date: v.union(v.string(), v.null()),
-    sender: v.union(v.string(), v.null()),
+    date: analysisResult,
+    sender: analysisResult,
   },
   handler: async (ctx, args) => {
     const monthData = await ctx.db
@@ -269,7 +287,7 @@ export const updateInvoiceParsing = internalMutation({
     monthKey: v.string(),
     storageId: v.id("_storage"),
     userId: v.id("users"),
-    parsedText: v.union(v.string(), v.null()),
+    parsedText: analysisResult,
   },
   handler: async (ctx, args) => {
     const monthData = await ctx.db

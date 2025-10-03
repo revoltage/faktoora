@@ -2,6 +2,12 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
+const analysisResult = v.object({
+  value: v.union(v.string(), v.null()),
+  error: v.union(v.string(), v.null()),
+  lastUpdated: v.union(v.number(), v.null()),
+});
+
 const applicationTables = {
   months: defineTable({
     userId: v.id("users"),
@@ -11,13 +17,13 @@ const applicationTables = {
         storageId: v.id("_storage"),
         fileName: v.string(),
         uploadedAt: v.number(),
-        analysis: v.optional(v.object({
-          date: v.union(v.string(), v.null()),
-          sender: v.union(v.string(), v.null()),
-        })),
-        parsing: v.optional(v.object({
-          parsedText: v.union(v.string(), v.null()),
-        })),
+        analysis: v.object({
+          date: analysisResult,
+          sender: analysisResult,
+        }),
+        parsing: v.object({
+          parsedText: analysisResult,
+        }),
       })
     ),
     statements: v.array(

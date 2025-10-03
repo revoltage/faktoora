@@ -340,22 +340,47 @@ export function InvoiceManager() {
                     {invoice.fileName}
                   </a>
                   <div className="flex items-center gap-2 text-xs">
-                    {invoice.analysis?.sender ? (
+                    {invoice.analysis.sender.error ? (
+                      <span 
+                        className="px-2 py-1 bg-red-100 text-red-800 rounded cursor-pointer hover:bg-red-200 transition-colors"
+                        onClick={() => console.error("🔍 Sender Analysis Error:", invoice.analysis.sender.error)}
+                        title="Click to see error details in console"
+                      >
+                        Sender Error
+                      </span>
+                    ) : invoice.analysis.sender.value ? (
                       <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
-                        From: {invoice.analysis.sender}
+                        From: {invoice.analysis.sender.value}
                       </span>
                     ) : (
                       <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded animate-pulse">
                         Analyzing sender...
                       </span>
                     )}
-                    {invoice.analysis?.date ? (
+                    {invoice.analysis.date.error ? (
+                      <span 
+                        className="px-2 py-1 bg-red-100 text-red-800 rounded cursor-pointer hover:bg-red-200 transition-colors"
+                        onClick={() => console.error("🔍 Date Analysis Error:", invoice.analysis.date.error)}
+                        title="Click to see error details in console"
+                      >
+                        Date Error
+                      </span>
+                    ) : invoice.analysis.date.value ? (
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                        Date: {invoice.analysis.date}
+                        Date: {invoice.analysis.date.value}
                       </span>
                     ) : (
                       <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded animate-pulse">
                         Analyzing date...
+                      </span>
+                    )}
+                    {invoice.parsing.parsedText.error && (
+                      <span 
+                        className="px-2 py-1 bg-red-100 text-red-800 rounded cursor-pointer hover:bg-red-200 transition-colors"
+                        onClick={() => console.error("📝 Parsing Error:", invoice.parsing.parsedText.error)}
+                        title="Click to see error details in console"
+                      >
+                        Parse Error
                       </span>
                     )}
                   </div>
