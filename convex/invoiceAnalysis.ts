@@ -5,6 +5,8 @@ import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { openai } from "@ai-sdk/openai";
+import { groq } from "@ai-sdk/groq";
 
 export const analyzeInvoice = internalAction({
   args: {
@@ -56,11 +58,16 @@ export const analyzeInvoice = internalAction({
   },
 });
 
+const _CLAUDE = anthropic("claude-sonnet-4-5");
+const _OPENAI = openai("gpt-5-mini");
+const _KIMI = groq("moonshotai/kimi-k2-instruct-0905");
+const _GPTOSS = groq("openai/gpt-oss-120b");
+
 async function askLLM(prompt: string, pdfBuffer: ArrayBuffer): Promise<{ value: string | null; error: string | null; lastUpdated: number }> {
   const now = Date.now();
   try {
     const result = await generateText({
-      model: anthropic("claude-sonnet-4-5"),
+      model: _OPENAI,
       messages: [
         {
           role: "user",
