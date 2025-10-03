@@ -51,9 +51,14 @@ export const getMonthData = query({
       }))
     );
 
+    // Sort invoices by uploadedAt in descending order (latest first)
+    const sortedInvoices = incomingInvoicesWithUrls.sort(
+      (a, b) => b.uploadedAt - a.uploadedAt
+    );
+
     return {
       monthKey: args.monthKey,
-      incomingInvoices: incomingInvoicesWithUrls,
+      incomingInvoices: sortedInvoices,
       statements: statementsWithUrls,
     };
   },

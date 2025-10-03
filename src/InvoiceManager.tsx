@@ -2,7 +2,11 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Id } from "../convex/_generated/dataModel";
+
+interface UploadingInvoice {
+  fileName: string;
+  uploadId: string;
+}
 
 export function InvoiceManager() {
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -44,10 +48,20 @@ export function InvoiceManager() {
   const deleteStatement = useMutation(api.invoices.deleteStatement);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadingInvoices, setUploadingInvoices] = useState<UploadingInvoice[]>([]);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
   const statementInputRef = useRef<HTMLInputElement>(null);
 
   const handleUploadInvoice = async (file: File) => {
+    const uploadId = `upload-${Date.now()}-${Math.random()}`;
+    const uploadingInvoice: UploadingInvoice = {
+      fileName: file.name,
+      uploadId,
+    };
+
+    // Add to uploading state immediately
+    setUploadingInvoices(prev => [...prev, uploadingInvoice]);
+
     try {
       const uploadUrl = await generateUploadUrl();
       const result = await fetch(uploadUrl, {
@@ -62,8 +76,11 @@ export function InvoiceManager() {
         fileName: file.name,
       });
       toast.success("Invoice uploaded - analyzing...");
-    } catch (error) {
+    } catch {
       toast.error("Failed to upload invoice");
+    } finally {
+      // Remove from uploading state
+      setUploadingInvoices(prev => prev.filter(inv => inv.uploadId !== uploadId));
     }
   };
 
@@ -83,18 +100,18 @@ export function InvoiceManager() {
         fileType,
       });
       toast.success("Statement uploaded");
-    } catch (error) {
+    } catch {
       toast.error("Failed to upload statement");
     }
   };
 
-  const handleDrop = async (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const files = Array.from(e.dataTransfer.files);
     for (const file of files) {
       if (file.type === "application/pdf") {
-        await handleUploadInvoice(file);
+        void handleUploadInvoice(file);
       }
     }
   };
@@ -129,6 +146,27 @@ export function InvoiceManager() {
     const date = new Date(parseInt(year), parseInt(month) - 1);
     return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
   };
+
+  const InvoiceSkeleton = ({ fileName }: { fileName: string }) => (
+    <div className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200 opacity-60">
+      <div className="flex items-center gap-3 flex-1">
+        <span className="text-blue-600 hover:underline font-medium">
+          {fileName}
+        </span>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded animate-pulse">
+            🔄 Uploading...
+          </span>
+          <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded animate-pulse">
+            🔄 Processing...
+          </span>
+        </div>
+        <span className="text-xs text-gray-500 ml-auto">
+          Just now
+        </span>
+      </div>
+    </div>
+  );
 
   if (!monthData) {
     return (
@@ -172,9 +210,11 @@ export function InvoiceManager() {
               const input = document.createElement("input");
               input.type = "file";
               input.accept = ".csv";
-              input.onchange = async (e) => {
+              input.onchange = (e) => {
                 const file = (e.target as HTMLInputElement).files?.[0];
-                if (file) await handleUploadStatement(file, "csv");
+                if (file) {
+                  void handleUploadStatement(file, "csv");
+                }
               };
               input.click();
             }}
@@ -187,9 +227,11 @@ export function InvoiceManager() {
             type="file"
             accept=".pdf"
             className="hidden"
-            onChange={async (e) => {
+            onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) await handleUploadStatement(file, "pdf");
+              if (file) {
+                void handleUploadStatement(file, "pdf");
+              }
               e.target.value = "";
             }}
           />
@@ -220,12 +262,12 @@ export function InvoiceManager() {
                   </span>
                 </div>
                 <button
-                  onClick={() =>
-                    deleteStatement({
+                  onClick={() => {
+                    void deleteStatement({
                       monthKey: currentMonth,
                       storageId: statement.storageId,
-                    })
-                  }
+                    });
+                  }}
                   className="text-red-600 hover:text-red-800 text-sm"
                 >
                   Delete
@@ -264,20 +306,25 @@ export function InvoiceManager() {
               accept=".pdf"
               multiple
               className="hidden"
-              onChange={async (e) => {
+              onChange={(e) => {
                 const files = Array.from(e.target.files || []);
                 for (const file of files) {
-                  await handleUploadInvoice(file);
+                  void handleUploadInvoice(file);
                 }
                 e.target.value = "";
               }}
             />
           </div>
         </div>
-        {monthData.incomingInvoices.length === 0 ? (
+        {monthData.incomingInvoices.length === 0 && uploadingInvoices.length === 0 ? (
           <p className="text-gray-500 text-sm">No invoices uploaded yet</p>
         ) : (
           <div className="space-y-2">
+            {/* Show uploading skeletons first */}
+            {uploadingInvoices.map((uploadingInvoice) => (
+              <InvoiceSkeleton key={uploadingInvoice.uploadId} fileName={uploadingInvoice.fileName} />
+            ))}
+            {/* Show uploaded invoices */}
             {monthData.incomingInvoices.map((invoice) => (
               <div
                 key={invoice.storageId}
@@ -317,12 +364,12 @@ export function InvoiceManager() {
                   </span>
                 </div>
                 <button
-                  onClick={() =>
-                    deleteIncomingInvoice({
+                  onClick={() => {
+                    void deleteIncomingInvoice({
                       monthKey: currentMonth,
                       storageId: invoice.storageId,
-                    })
-                  }
+                    });
+                  }}
                   className="text-red-600 hover:text-red-800 text-sm ml-4"
                 >
                   Delete
