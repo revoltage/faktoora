@@ -350,11 +350,15 @@ export function InvoiceManager() {
                       </span>
                     ) : invoice.analysis.sender.value ? (
                       <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
-                        From: {invoice.analysis.sender.value}
+                        {invoice.analysis.sender.value}
                       </span>
-                    ) : (
+                    ) : invoice.analysis.sender.lastUpdated === null ? (
                       <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded animate-pulse">
                         Analyzing sender...
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded">
+                        N/A
                       </span>
                     )}
                     {invoice.analysis.date.error ? (
@@ -367,11 +371,15 @@ export function InvoiceManager() {
                       </span>
                     ) : invoice.analysis.date.value ? (
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                        Date: {invoice.analysis.date.value}
+                        {invoice.analysis.date.value}
                       </span>
-                    ) : (
+                    ) : invoice.analysis.date.lastUpdated === null ? (
                       <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded animate-pulse">
                         Analyzing date...
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded">
+                        N/A
                       </span>
                     )}
                     {invoice.analysis.parsedText.error && (
