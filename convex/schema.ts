@@ -20,10 +20,9 @@ const applicationTables = {
         analysis: v.object({
           date: analysisResult,
           sender: analysisResult,
-        }),
-        parsing: v.object({
           parsedText: analysisResult,
         }),
+        parsing: v.object({}),
       })
     ),
     statements: v.array(

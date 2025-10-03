@@ -374,10 +374,10 @@ export function InvoiceManager() {
                         Analyzing date...
                       </span>
                     )}
-                    {invoice.parsing.parsedText.error && (
+                    {invoice.analysis.parsedText.error && (
                       <span 
                         className="px-2 py-1 bg-red-100 text-red-800 rounded cursor-pointer hover:bg-red-200 transition-colors"
-                        onClick={() => console.error("📝 Parsing Error:", invoice.parsing.parsedText.error)}
+                        onClick={() => console.error("📝 Parsing Error:", invoice.analysis.parsedText.error)}
                         title="Click to see error details in console"
                       >
                         Parse Error

@@ -104,14 +104,13 @@ export const addIncomingInvoice = mutation({
           error: null,
           lastUpdated: null,
         },
-      },
-      parsing: {
         parsedText: {
           value: null,
           error: null,
           lastUpdated: null,
         },
       },
+      parsing: {},
     };
 
     if (existing) {
@@ -127,19 +126,12 @@ export const addIncomingInvoice = mutation({
       });
     }
 
-    // Trigger background analysis and parsing
-    await Promise.all([
-      ctx.scheduler.runAfter(0, internal.invoiceAnalysis.analyzeInvoice, {
-        monthKey: args.monthKey,
-        storageId: args.storageId,
-        userId,
-      }),
-      ctx.scheduler.runAfter(0, internal.invoiceParsing.parseInvoiceText, {
-        monthKey: args.monthKey,
-        storageId: args.storageId,
-        userId,
-      }),
-    ]);
+    // Trigger background analysis (includes parsing)
+    await ctx.scheduler.runAfter(0, internal.invoiceAnalysis.analyzeInvoice, {
+      monthKey: args.monthKey,
+      storageId: args.storageId,
+      userId,
+    });
   },
 });
 
@@ -250,6 +242,7 @@ export const updateInvoiceAnalysis = internalMutation({
     userId: v.id("users"),
     date: analysisResult,
     sender: analysisResult,
+    parsedText: analysisResult,
   },
   handler: async (ctx, args) => {
     const monthData = await ctx.db
@@ -270,42 +263,6 @@ export const updateInvoiceAnalysis = internalMutation({
           analysis: {
             date: args.date,
             sender: args.sender,
-          },
-        };
-      }
-      return invoice;
-    });
-
-    await ctx.db.patch(monthData._id, {
-      incomingInvoices: updatedInvoices,
-    });
-  },
-});
-
-export const updateInvoiceParsing = internalMutation({
-  args: {
-    monthKey: v.string(),
-    storageId: v.id("_storage"),
-    userId: v.id("users"),
-    parsedText: analysisResult,
-  },
-  handler: async (ctx, args) => {
-    const monthData = await ctx.db
-      .query("months")
-      .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
-      )
-      .unique();
-
-    if (!monthData) {
-      return;
-    }
-
-    const updatedInvoices = monthData.incomingInvoices.map((invoice) => {
-      if (invoice.storageId === args.storageId) {
-        return {
-          ...invoice,
-          parsing: {
             parsedText: args.parsedText,
           },
         };
@@ -318,3 +275,4 @@ export const updateInvoiceParsing = internalMutation({
     });
   },
 });
+
