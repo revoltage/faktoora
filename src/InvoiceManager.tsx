@@ -2,6 +2,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { TransactionList } from "./TransactionList";
 
 interface UploadingInvoice {
   fileName: string;
@@ -92,12 +93,26 @@ export function InvoiceManager() {
         body: file,
       });
       const { storageId } = await result.json();
-      await addStatement({
-        monthKey: currentMonth,
-        storageId,
-        fileName: file.name,
-        fileType,
-      });
+      
+      // If it's a CSV file, read the content and process it
+      if (fileType === "csv") {
+        const csvContent = await file.text();
+        await addStatement({
+          monthKey: currentMonth,
+          storageId,
+          fileName: file.name,
+          fileType,
+          csvContent,
+        });
+        toast.success(`📊 Processed CSV: ${file.name}`);
+      } else {
+        await addStatement({
+          monthKey: currentMonth,
+          storageId,
+          fileName: file.name,
+          fileType,
+        });
+      }
     } catch {
       toast.error("Failed to upload statement");
     }
@@ -208,9 +223,10 @@ export function InvoiceManager() {
               const input = document.createElement("input");
               input.type = "file";
               input.accept = ".csv";
+              input.multiple = true;
               input.onchange = (e) => {
-                const file = (e.target as HTMLInputElement).files?.[0];
-                if (file) {
+                const files = Array.from((e.target as HTMLInputElement).files || []);
+                for (const file of files) {
                   void handleUploadStatement(file, "csv");
                 }
               };
@@ -218,7 +234,7 @@ export function InvoiceManager() {
             }}
             className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
           >
-            Upload Statement CSV
+            Upload Statement CSV(s)
           </button>
           <input
             ref={statementInputRef}
@@ -274,6 +290,11 @@ export function InvoiceManager() {
             ))}
           </div>
         )}
+        
+        {/* Transaction List */}
+        <div className="mt-6">
+          <TransactionList monthKey={currentMonth} />
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

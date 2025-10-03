@@ -142,6 +142,7 @@ export const addStatement = mutation({
     storageId: v.id("_storage"),
     fileName: v.string(),
     fileType: v.union(v.literal("pdf"), v.literal("csv")),
+    csvContent: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -156,11 +157,17 @@ export const addStatement = mutation({
       )
       .unique();
 
+    let transactions = undefined;
+    if (args.fileType === "csv" && args.csvContent) {
+      transactions = parseCsvTransactions(args.csvContent);
+    }
+
     const newStatement = {
       storageId: args.storageId,
       fileName: args.fileName,
       fileType: args.fileType,
       uploadedAt: Date.now(),
+      transactions,
     };
 
     if (existing) {
@@ -427,6 +434,133 @@ export const updateInvoiceAnalysisBigError = internalMutation({
 
     await ctx.db.patch(monthData._id, {
       incomingInvoices: updatedInvoices,
+    });
+  },
+});
+
+function parseCsvTransactions(csvText: string) {
+  const lines = csvText.split('\n').filter(line => line.trim());
+  if (lines.length < 2) return [];
+
+  const headers = lines[0].split(',').map(h => h.trim());
+  const transactions = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+
+    // Simple CSV parsing - split by comma and handle quoted fields
+    const values = parseCsvLine(line);
+    
+    if (values.length >= headers.length) {
+      const transaction = {
+        id: values[2] || '', // ID column
+        dateStarted: values[0] || '',
+        dateCompleted: values[1] || '',
+        type: values[3] || '',
+        state: values[4] || '',
+        description: values[5] || '',
+        reference: values[6] || '',
+        payer: values[7] || '',
+        cardNumber: values[8] || '',
+        cardLabel: values[9] || '',
+        cardState: values[10] || '',
+        origCurrency: values[11] || '',
+        origAmount: values[12] || '',
+        paymentCurrency: values[13] || '',
+        amount: values[14] || '',
+        totalAmount: values[15] || '',
+        exchangeRate: values[16] || '',
+        fee: values[17] || '',
+        feeCurrency: values[18] || '',
+        balance: values[19] || '',
+        account: values[20] || '',
+        beneficiaryAccountNumber: values[21] || '',
+        beneficiarySortCode: values[22] || '',
+        beneficiaryIban: values[23] || '',
+        beneficiaryBic: values[24] || '',
+        mcc: values[25] || '',
+        relatedTransactionId: values[26] || '',
+        spendProgram: values[27] || '',
+      };
+      transactions.push(transaction);
+    }
+  }
+
+  return transactions;
+}
+
+function parseCsvLine(line: string): string[] {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+        // Handle escaped quotes
+        current += '"';
+        i++; // Skip the next quote
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  result.push(current.trim());
+  return result;
+}
+
+export const getMergedTransactions = query({
+  args: { monthKey: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+
+    const monthData = await ctx.db
+      .query("months")
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", userId).eq("monthKey", args.monthKey)
+      )
+      .unique();
+
+    if (!monthData) {
+      return [];
+    }
+
+    // Collect all transactions from CSV statements
+    const allTransactions = [];
+    const seenIds = new Set<string>();
+
+    for (const statement of monthData.statements) {
+      if (statement.fileType === "csv" && statement.transactions) {
+        for (const transaction of statement.transactions) {
+          // Only add unique transactions based on ID
+          if (transaction.id && !seenIds.has(transaction.id)) {
+            seenIds.add(transaction.id);
+            allTransactions.push({
+              ...transaction,
+              sourceFile: statement.fileName,
+            });
+          }
+        }
+      }
+    }
+
+    // Sort by date (most recent first)
+    return allTransactions.sort((a, b) => {
+      const dateA = new Date(a.dateCompleted || a.dateStarted);
+      const dateB = new Date(b.dateCompleted || b.dateStarted);
+      return dateB.getTime() - dateA.getTime();
     });
   },
 });
