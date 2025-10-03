@@ -7,6 +7,7 @@ import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { groq } from "@ai-sdk/groq";
+import { google } from "@ai-sdk/google";
 
 export const analyzeInvoice = internalAction({
   args: {
@@ -82,6 +83,8 @@ const _CLAUDE = anthropic("claude-sonnet-4-5");
 const _OPENAI = openai("gpt-5-mini");
 const _KIMI = groq("moonshotai/kimi-k2-instruct-0905");
 const _GPTOSS = groq("openai/gpt-oss-120b");
+const _LLAMA3 = groq("meta-llama/llama-4-maverick-17b-128e-instruct");
+const _GEMINI = google("gemini-2.5-flash");
 
 async function askLLM(
   prompt: string,
@@ -94,7 +97,7 @@ async function askLLM(
   const now = Date.now();
   try {
     const result = await generateText({
-      model: _OPENAI,
+      model: _GEMINI,
       messages: [
         {
           role: "user",

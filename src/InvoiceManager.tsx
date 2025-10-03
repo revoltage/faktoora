@@ -75,7 +75,6 @@ export function InvoiceManager() {
         storageId,
         fileName: file.name,
       });
-      toast.success("Invoice uploaded - analyzing...");
     } catch {
       toast.error("Failed to upload invoice");
     } finally {
@@ -99,7 +98,6 @@ export function InvoiceManager() {
         fileName: file.name,
         fileType,
       });
-      toast.success("Statement uploaded");
     } catch {
       toast.error("Failed to upload statement");
     }
