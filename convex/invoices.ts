@@ -279,3 +279,155 @@ export const updateInvoiceAnalysis = internalMutation({
   },
 });
 
+export const updateInvoiceDate = internalMutation({
+  args: {
+    monthKey: v.string(),
+    storageId: v.id("_storage"),
+    userId: v.id("users"),
+    date: analysisResult,
+  },
+  handler: async (ctx, args) => {
+    const monthData = await ctx.db
+      .query("months")
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
+      )
+      .unique();
+
+    if (!monthData) {
+      return;
+    }
+
+    const updatedInvoices = monthData.incomingInvoices.map((invoice) => {
+      if (invoice.storageId === args.storageId) {
+        return {
+          ...invoice,
+          analysis: {
+            ...invoice.analysis,
+            date: args.date,
+          },
+        };
+      }
+      return invoice;
+    });
+
+    await ctx.db.patch(monthData._id, {
+      incomingInvoices: updatedInvoices,
+    });
+  },
+});
+
+export const updateInvoiceSender = internalMutation({
+  args: {
+    monthKey: v.string(),
+    storageId: v.id("_storage"),
+    userId: v.id("users"),
+    sender: analysisResult,
+  },
+  handler: async (ctx, args) => {
+    const monthData = await ctx.db
+      .query("months")
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
+      )
+      .unique();
+
+    if (!monthData) {
+      return;
+    }
+
+    const updatedInvoices = monthData.incomingInvoices.map((invoice) => {
+      if (invoice.storageId === args.storageId) {
+        return {
+          ...invoice,
+          analysis: {
+            ...invoice.analysis,
+            sender: args.sender,
+          },
+        };
+      }
+      return invoice;
+    });
+
+    await ctx.db.patch(monthData._id, {
+      incomingInvoices: updatedInvoices,
+    });
+  },
+});
+
+export const updateInvoiceParsedText = internalMutation({
+  args: {
+    monthKey: v.string(),
+    storageId: v.id("_storage"),
+    userId: v.id("users"),
+    parsedText: analysisResult,
+  },
+  handler: async (ctx, args) => {
+    const monthData = await ctx.db
+      .query("months")
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
+      )
+      .unique();
+
+    if (!monthData) {
+      return;
+    }
+
+    const updatedInvoices = monthData.incomingInvoices.map((invoice) => {
+      if (invoice.storageId === args.storageId) {
+        return {
+          ...invoice,
+          analysis: {
+            ...invoice.analysis,
+            parsedText: args.parsedText,
+          },
+        };
+      }
+      return invoice;
+    });
+
+    await ctx.db.patch(monthData._id, {
+      incomingInvoices: updatedInvoices,
+    });
+  },
+});
+
+export const updateInvoiceAnalysisBigError = internalMutation({
+  args: {
+    monthKey: v.string(),
+    storageId: v.id("_storage"),
+    userId: v.id("users"),
+    analysisBigError: v.union(v.string(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    const monthData = await ctx.db
+      .query("months")
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
+      )
+      .unique();
+
+    if (!monthData) {
+      return;
+    }
+
+    const updatedInvoices = monthData.incomingInvoices.map((invoice) => {
+      if (invoice.storageId === args.storageId) {
+        return {
+          ...invoice,
+          analysis: {
+            ...invoice.analysis,
+            analysisBigError: args.analysisBigError,
+          },
+        };
+      }
+      return invoice;
+    });
+
+    await ctx.db.patch(monthData._id, {
+      incomingInvoices: updatedInvoices,
+    });
+  },
+});
+
