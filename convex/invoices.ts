@@ -86,6 +86,9 @@ export const addIncomingInvoice = mutation({
         date: null,
         sender: null,
       },
+      parsing: {
+        parsedText: null,
+      },
     };
 
     if (existing) {
@@ -101,12 +104,19 @@ export const addIncomingInvoice = mutation({
       });
     }
 
-    // Trigger background analysis
-    await ctx.scheduler.runAfter(0, internal.invoiceAnalysis.analyzeInvoice, {
-      monthKey: args.monthKey,
-      storageId: args.storageId,
-      userId,
-    });
+    // Trigger background analysis and parsing
+    await Promise.all([
+      ctx.scheduler.runAfter(0, internal.invoiceAnalysis.analyzeInvoice, {
+        monthKey: args.monthKey,
+        storageId: args.storageId,
+        userId,
+      }),
+      ctx.scheduler.runAfter(0, internal.invoiceParsing.parseInvoiceText, {
+        monthKey: args.monthKey,
+        storageId: args.storageId,
+        userId,
+      }),
+    ]);
   },
 });
 
@@ -237,6 +247,43 @@ export const updateInvoiceAnalysis = internalMutation({
           analysis: {
             date: args.date,
             sender: args.sender,
+          },
+        };
+      }
+      return invoice;
+    });
+
+    await ctx.db.patch(monthData._id, {
+      incomingInvoices: updatedInvoices,
+    });
+  },
+});
+
+export const updateInvoiceParsing = internalMutation({
+  args: {
+    monthKey: v.string(),
+    storageId: v.id("_storage"),
+    userId: v.id("users"),
+    parsedText: v.union(v.string(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    const monthData = await ctx.db
+      .query("months")
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
+      )
+      .unique();
+
+    if (!monthData) {
+      return;
+    }
+
+    const updatedInvoices = monthData.incomingInvoices.map((invoice) => {
+      if (invoice.storageId === args.storageId) {
+        return {
+          ...invoice,
+          parsing: {
+            parsedText: args.parsedText,
           },
         };
       }

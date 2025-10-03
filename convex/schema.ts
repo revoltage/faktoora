@@ -15,6 +15,9 @@ const applicationTables = {
           date: v.union(v.string(), v.null()),
           sender: v.union(v.string(), v.null()),
         })),
+        parsing: v.optional(v.object({
+          parsedText: v.union(v.string(), v.null()),
+        })),
       })
     ),
     statements: v.array(

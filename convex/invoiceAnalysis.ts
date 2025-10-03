@@ -43,7 +43,7 @@ async function extractInvoiceDate(
 ): Promise<string | null> {
   try {
     const result = await generateText({
-      model: anthropic("claude-3-5-sonnet-20241022"),
+      model: anthropic("claude-sonnet-4-5"),
       messages: [
         {
           role: "user",
@@ -75,7 +75,7 @@ async function extractInvoiceSender(
 ): Promise<string | null> {
   try {
     const result = await generateText({
-      model: anthropic("claude-3-5-sonnet-20241022"),
+      model: anthropic("claude-sonnet-4-5"),
       messages: [
         {
           role: "user",
