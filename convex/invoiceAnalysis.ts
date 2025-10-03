@@ -23,8 +23,6 @@ export const analyzeInvoice = internalAction({
     const pdfBlob = await response.blob();
     const pdfBuffer = await pdfBlob.arrayBuffer();
 
-    const now = Date.now();
-
     try {
       const [dateResult, senderResult, parsedTextResult] = await Promise.all([
         extractInvoiceDate(pdfBuffer),
@@ -36,51 +34,30 @@ export const analyzeInvoice = internalAction({
         monthKey: args.monthKey,
         storageId: args.storageId,
         userId: args.userId,
-        date: {
-          value: dateResult,
-          error: null,
-          lastUpdated: now,
-        },
-        sender: {
-          value: senderResult,
-          error: null,
-          lastUpdated: now,
-        },
-        parsedText: {
-          value: parsedTextResult,
-          error: null,
-          lastUpdated: now,
-        },
+        date: dateResult,
+        sender: senderResult,
+        parsedText: parsedTextResult,
+        analysisBigError: null,
       });
     } catch (error) {
-      console.error("🔍 Error in invoice analysis:", error);
+      console.error("🔍 Error in invoice analysis (big error):", error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       await ctx.runMutation(internal.invoices.updateInvoiceAnalysis, {
         monthKey: args.monthKey,
         storageId: args.storageId,
         userId: args.userId,
-        date: {
-          value: null,
-          error: errorMessage,
-          lastUpdated: now,
-        },
-        sender: {
-          value: null,
-          error: errorMessage,
-          lastUpdated: now,
-        },
-        parsedText: {
-          value: null,
-          error: errorMessage,
-          lastUpdated: now,
-        },
+        date: { value: null, error: null, lastUpdated: null },
+        sender: { value: null, error: null, lastUpdated: null },
+        parsedText: { value: null, error: null, lastUpdated: null },
+        analysisBigError: errorMessage,
       });
     }
   },
 });
 
-async function askLLM(prompt: string, pdfBuffer: ArrayBuffer): Promise<string | null> {
+async function askLLM(prompt: string, pdfBuffer: ArrayBuffer): Promise<{ value: string | null; error: string | null; lastUpdated: number }> {
+  const now = Date.now();
   try {
     const result = await generateText({
       model: anthropic("claude-sonnet-4-5"),
@@ -103,16 +80,24 @@ async function askLLM(prompt: string, pdfBuffer: ArrayBuffer): Promise<string | 
     });
 
     const content = result.text.trim();
-    return content === "null" || !content ? null : content;
+    return {
+      value: content === "null" || !content ? null : content,
+      error: null,
+      lastUpdated: now,
+    };
   } catch (error) {
     console.error("🤖 Error calling LLM:", error);
-    return null;
+    return {
+      value: null,
+      error: error instanceof Error ? error.message : String(error),
+      lastUpdated: now,
+    };
   }
 }
 
 async function extractInvoiceDate(
   pdfBuffer: ArrayBuffer
-): Promise<string | null> {
+): Promise<{ value: string | null; error: string | null; lastUpdated: number }> {
   return await askLLM(
     "Extract the invoice issue date from this PDF. Return ONLY the date in YYYY-MM-DD format, or 'null' if no date is found. Do not include any other text.",
     pdfBuffer
@@ -121,7 +106,7 @@ async function extractInvoiceDate(
 
 async function extractInvoiceSender(
   pdfBuffer: ArrayBuffer
-): Promise<string | null> {
+): Promise<{ value: string | null; error: string | null; lastUpdated: number }> {
   return await askLLM(
     "Extract the sender/vendor name from this invoice PDF. Return ONLY the company or person name, or 'null' if not found. Do not include any other text.",
     pdfBuffer
@@ -130,7 +115,7 @@ async function extractInvoiceSender(
 
 async function extractTextFromPDF(
   pdfBuffer: ArrayBuffer
-): Promise<string | null> {
+): Promise<{ value: string | null; error: string | null; lastUpdated: number }> {
   return await askLLM(
     "Extract all text content from this PDF document. Return the complete text as plain markdown, preserving line breaks and structure. If the document contains no readable text, return 'null'.",
     pdfBuffer

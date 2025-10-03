@@ -21,6 +21,7 @@ const applicationTables = {
           date: analysisResult,
           sender: analysisResult,
           parsedText: analysisResult,
+          analysisBigError: v.union(v.string(), v.null()),
         }),
         parsing: v.object({}),
       })

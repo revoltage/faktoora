@@ -109,6 +109,7 @@ export const addIncomingInvoice = mutation({
           error: null,
           lastUpdated: null,
         },
+        analysisBigError: null,
       },
       parsing: {},
     };
@@ -243,6 +244,7 @@ export const updateInvoiceAnalysis = internalMutation({
     date: analysisResult,
     sender: analysisResult,
     parsedText: analysisResult,
+    analysisBigError: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     const monthData = await ctx.db
@@ -264,6 +266,7 @@ export const updateInvoiceAnalysis = internalMutation({
             date: args.date,
             sender: args.sender,
             parsedText: args.parsedText,
+            analysisBigError: args.analysisBigError,
           },
         };
       }

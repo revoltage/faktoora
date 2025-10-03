@@ -383,6 +383,15 @@ export function InvoiceManager() {
                         Parse Error
                       </span>
                     )}
+                    {invoice.analysis.analysisBigError && (
+                      <span 
+                        className="px-2 py-1 bg-red-100 text-red-800 rounded cursor-pointer hover:bg-red-200 transition-colors"
+                        onClick={() => console.error("🚨 Analysis Big Error:", invoice.analysis.analysisBigError)}
+                        title="Click to see error details in console"
+                      >
+                        Analysis Error
+                      </span>
+                    )}
                   </div>
                   <span className="text-xs text-gray-500 ml-auto">
                     Uploaded: {new Date(invoice.uploadedAt).toLocaleDateString()}
