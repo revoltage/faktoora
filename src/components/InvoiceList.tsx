@@ -1,5 +1,5 @@
 import { useQuery } from "convex/react";
-import { CheckIcon, XIcon, Loader2 } from "lucide-react";
+import { CheckIcon, XIcon, Loader2, CircleAlertIcon } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -149,7 +149,11 @@ export const InvoiceList = ({
 
   const formatInvoiceDate = (dateStr: string | number) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+    return date.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      // year: "2-digit",
+    });
   };
 
   const renderVatIdStatus = (invoice: any) => {
@@ -278,32 +282,7 @@ export const InvoiceList = ({
                           {invoice.name ?? invoice.fileName}
                         </span>
 
-                        <span className="text-xs font-medium">
-                          {invoice.analysis.sender.error ? (
-                            <span
-                              className="text-red-600 cursor-pointer"
-                              onClick={() =>
-                                console.error(
-                                  "🔍 Sender Analysis Error:",
-                                  invoice.analysis.sender.error
-                                )
-                              }
-                            >
-                              Sender Error
-                            </span>
-                          ) : invoice.analysis.sender.value ? (
-                            <CheckIcon className="inline-block w-3 h-3 text-green-600" />
-                          ) : // invoice.analysis.sender.value
-                          invoice.analysis.sender.lastUpdated === null ? (
-                            <span className="text-yellow-600">
-                              Analyzing sender...
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">N/A</span>
-                          )}
-                        </span>
-
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        <span className="text-[9px] text-muted-foreground whitespace-nowrap">
                           {invoice.analysis.date.error ? (
                             <span
                               className="text-red-600 cursor-pointer"
@@ -314,13 +293,40 @@ export const InvoiceList = ({
                                 )
                               }
                             >
-                              Date Error
+                              <CircleAlertIcon className="inline-block w-2.5 h-2.5 text-red-600" />
                             </span>
                           ) : invoice.analysis.date.value ? (
                             formatInvoiceDate(invoice.analysis.date.value)
                           ) : invoice.analysis.date.lastUpdated === null ? (
-                            <span className="text-yellow-600">
+                            <span className="text-yellow-600 animate-pulse">
                               Analyzing date...
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">N/A</span>
+                          )}
+                        </span>
+
+                        <span className="text-[9px]">
+                          {invoice.analysis.sender.error ? (
+                            <span
+                              className="text-red-600 cursor-pointer"
+                              onClick={() =>
+                                console.error(
+                                  "🔍 Sender Analysis Error:",
+                                  invoice.analysis.sender.error
+                                )
+                              }
+                            >
+                              <CircleAlertIcon className="inline-block w-2.5 h-2.5 text-red-600" />
+                            </span>
+                          ) : invoice.analysis.sender.value ? (
+                            <>
+                              {/* <CheckIcon className="inline-block w-3 h-3 text-green-600" /> */}
+                            </>
+                          ) : // invoice.analysis.sender.value
+                          invoice.analysis.sender.lastUpdated === null ? (
+                            <span className="text-yellow-600 animate-pulse">
+                              Analyzing sender...
                             </span>
                           ) : (
                             <span className="text-gray-400">N/A</span>
@@ -338,12 +344,12 @@ export const InvoiceList = ({
                               )
                             }
                           >
-                            Amount Error
+                            ERROR
                           </span>
                         ) : invoice.analysis.amount.value ? (
                           invoice.analysis.amount.value.replace("|", " ")
                         ) : invoice.analysis.amount.lastUpdated === null ? (
-                          <span className="text-yellow-600">
+                          <span className="text-yellow-600 animate-pulse">
                             Analyzing amount...
                           </span>
                         ) : (
@@ -374,7 +380,9 @@ export const InvoiceList = ({
                             </span>
                           ) : invoice.analysis.parsedText.lastUpdated ===
                             null ? (
-                            <span className="text-yellow-600">Parsing</span>
+                            <span className="text-yellow-600 animate-pulse">
+                              Parsing
+                            </span>
                           ) : (
                             <span className="text-green-600">Parsed</span>
                           )}

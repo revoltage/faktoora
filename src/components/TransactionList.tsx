@@ -189,9 +189,6 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
           )
         </h3>
         <div className="flex items-center gap-2">
-          <div className="text-[11px] text-muted-foreground">
-            Merged from CSV statements
-          </div>
           <Button
             variant="link"
             size="sm"
@@ -314,6 +311,10 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
             </div>
           );
         })}
+      </div>
+
+      <div className="text-[8px] text-muted-foreground italic">
+        Merged from CSV statements
       </div>
 
       <TransactionDetailsModal
