@@ -3,6 +3,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "./ui/separator";
 
 interface EmailDraftProps {
   invoices: any[];
@@ -62,7 +63,10 @@ export const EmailDraft = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-3 pt-0">
-        <pre className="whitespace-pre-wrap text-[10px] text-muted-foreground bg-gray-50 p-3 rounded border font-[Arial, sans-serif] font-normal">
+        <Separator className="mb-2" />
+
+        {/* <pre className="whitespace-pre-wrap text-[10px] text-muted-foreground bg-gray-50 p-3 rounded border font-[Arial, sans-serif] font-normal"> */}
+        <pre className="whitespace-pre-wrap text-[10px] text-muted-foreground font-[Arial, sans-serif] font-normal">
           {emailContent}
         </pre>
       </CardContent>
@@ -125,7 +129,6 @@ function createEmailDraft(
         invoice.name || invoice.analysis?.sender?.value || invoice.fileName;
       emailContent += `• ${displayName}\n`;
     });
-    emailContent += "\n";
   }
 
   return emailContent;
