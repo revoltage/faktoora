@@ -315,44 +315,41 @@ export function InvoiceManager() {
         </CardContent>
       </Card>
 
-      <Card className="border border-gray-200 shadow-sm">
+      <Card 
+        className={`border border-gray-200 shadow-sm transition-colors ${
+          isDragging ? "border-blue-500 bg-blue-50" : ""
+        }`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
         <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-sm font-semibold tracking-tight">Incoming Invoices</CardTitle>
+          <CardTitle className="text-sm font-semibold tracking-tight flex items-center justify-between">
+            Incoming Invoices
+            <Button
+              size="sm"
+              className="h-5 w-5 p-0 text-xs"
+              onClick={() => invoiceInputRef.current?.click()}
+            >
+              +
+            </Button>
+          </CardTitle>
         </CardHeader>
-        <CardContent className="p-3 pt-0">
-          <div
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            className={`border-2 border-dashed rounded-md p-4 mb-3 transition-colors ${
-              isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-gray-50"
-            }`}
-          >
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-2">Drag & drop invoice PDFs, or</p>
-              <Button
-                size="sm"
-                className="h-7 px-2 text-[11px]"
-                onClick={() => invoiceInputRef.current?.click()}
-              >
-                Browse Files
-              </Button>
-              <input
-                ref={invoiceInputRef}
-                type="file"
-                accept=".pdf"
-                multiple
-                className="hidden"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files || []);
-                  for (const file of files) {
-                    void handleUploadInvoice(file);
-                  }
-                  e.target.value = "";
-                }}
-              />
-            </div>
-          </div>
+        <CardContent className={`p-3 pt-0 transition-opacity ${isDragging ? "opacity-50" : ""}`}>
+          <input
+            ref={invoiceInputRef}
+            type="file"
+            accept=".pdf"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              for (const file of files) {
+                void handleUploadInvoice(file);
+              }
+              e.target.value = "";
+            }}
+          />
           {monthData.incomingInvoices.length === 0 && uploadingInvoices.length === 0 ? (
             <p className="text-xs text-muted-foreground">No invoices uploaded yet</p>
           ) : (
