@@ -15,14 +15,31 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const AI_MODELS = {
+  claude: "Claude Sonnet 4.5",
+  openai: "GPT-5 Mini",
+  kimi: "Kimi K2",
+  gptoss: "GPT-OSS 120B",
+  llama3: "Llama 4 Maverick",
+  gemini: "Gemini 2.5 Flash",
+} as const;
+
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [vatId, setVatId] = useState("");
+  const [aiModel, setAiModel] = useState<keyof typeof AI_MODELS>("gemini");
   const [isLoading, setIsLoading] = useState(false);
 
   const userSettings = useQuery(api.userSettings.getUserSettings);
@@ -31,6 +48,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   useEffect(() => {
     if (userSettings) {
       setVatId(userSettings.vatId || "");
+      setAiModel((userSettings.aiModel as keyof typeof AI_MODELS) || "gemini");
     }
   }, [userSettings]);
 
@@ -39,6 +57,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     try {
       await updateUserSettings({
         vatId: vatId.trim() || undefined,
+        aiModel: aiModel,
       });
       toast.success("⚙️ Settings saved successfully");
       onClose();
@@ -54,6 +73,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     // Reset to original values
     if (userSettings) {
       setVatId(userSettings.vatId || "");
+      setAiModel((userSettings.aiModel as keyof typeof AI_MODELS) || "gemini");
     }
     onClose();
   };
@@ -79,6 +99,23 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               className="col-span-3"
               placeholder="Enter your VAT ID"
             />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="aiModel" className="text-right">
+              AI Model
+            </Label>
+            <Select value={aiModel} onValueChange={(value: keyof typeof AI_MODELS) => setAiModel(value)}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select AI model" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(AI_MODELS).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>

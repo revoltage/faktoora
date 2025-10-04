@@ -22,12 +22,19 @@ export const analyzeInvoice = internalAction({
         throw new Error("📄 PDF not found in storage");
       }
 
+      // Get user's AI model preference
+      const userSettings = await ctx.runQuery(internal.userSettings.getUserSettingsInternal, {
+        userId: args.userId,
+      });
+      const modelKey = (userSettings?.aiModel as keyof typeof AI_MODELS) || "gemini";
+      console.log(`🤖 Using AI model: ${modelKey} for user ${args.userId}`);
+
       const response = await fetch(pdfUrl);
       const pdfBlob = await response.blob();
       const pdfBuffer = await pdfBlob.arrayBuffer();
 
       // Start all extractions in parallel but handle each individually
-      const datePromise = extractInvoiceDate(pdfBuffer).then(
+      const datePromise = extractInvoiceDate(pdfBuffer, modelKey).then(
         async (dateResult) => {
           await ctx.runMutation(internal.invoices.updateInvoiceDate, {
             monthKey: args.monthKey,
@@ -39,7 +46,7 @@ export const analyzeInvoice = internalAction({
         }
       );
 
-      const senderPromise = extractInvoiceSender(pdfBuffer).then(
+      const senderPromise = extractInvoiceSender(pdfBuffer, modelKey).then(
         async (senderResult) => {
           await ctx.runMutation(internal.invoices.updateInvoiceSender, {
             monthKey: args.monthKey,
@@ -51,7 +58,7 @@ export const analyzeInvoice = internalAction({
         }
       );
 
-      const parsedTextPromise = extractTextFromPDF(pdfBuffer).then(
+      const parsedTextPromise = extractTextFromPDF(pdfBuffer, modelKey).then(
         async (parsedTextResult) => {
           await ctx.runMutation(internal.invoices.updateInvoiceParsedText, {
             monthKey: args.monthKey,
@@ -63,7 +70,7 @@ export const analyzeInvoice = internalAction({
         }
       );
 
-      const amountPromise = extractInvoiceAmount(pdfBuffer).then(
+      const amountPromise = extractInvoiceAmount(pdfBuffer, modelKey).then(
         async (amountResult) => {
           await ctx.runMutation(internal.invoices.updateInvoiceAmount, {
             monthKey: args.monthKey,
@@ -91,16 +98,19 @@ export const analyzeInvoice = internalAction({
   },
 });
 
-const _CLAUDE = anthropic("claude-sonnet-4-5");
-const _OPENAI = openai("gpt-5-mini");
-const _KIMI = groq("moonshotai/kimi-k2-instruct-0905");
-const _GPTOSS = groq("openai/gpt-oss-120b");
-const _LLAMA3 = groq("meta-llama/llama-4-maverick-17b-128e-instruct");
-const _GEMINI = google("gemini-2.5-flash");
+const AI_MODELS = {
+  claude: anthropic("claude-sonnet-4-5"),
+  openai: openai("gpt-5-mini"),
+  kimi: groq("moonshotai/kimi-k2-instruct-0905"),
+  gptoss: groq("openai/gpt-oss-120b"),
+  llama3: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
+  gemini: google("gemini-2.5-flash"),
+} as const;
 
 async function askLLM(
   prompt: string,
-  pdfBuffer: ArrayBuffer
+  pdfBuffer: ArrayBuffer,
+  modelKey: keyof typeof AI_MODELS = "gemini"
 ): Promise<{
   value: string | null;
   error: string | null;
@@ -109,7 +119,7 @@ async function askLLM(
   const now = Date.now();
   try {
     const result = await generateText({
-      model: _GEMINI,
+      model: AI_MODELS[modelKey],
       messages: [
         {
           role: "user",
@@ -145,7 +155,8 @@ async function askLLM(
 }
 
 async function extractInvoiceDate(
-  pdfBuffer: ArrayBuffer
+  pdfBuffer: ArrayBuffer,
+  modelKey: keyof typeof AI_MODELS = "gemini"
 ): Promise<{
   value: string | null;
   error: string | null;
@@ -153,12 +164,14 @@ async function extractInvoiceDate(
 }> {
   return await askLLM(
     "Extract the invoice issue date from this PDF. Return ONLY the date in YYYY-MM-DD format, or 'null' if no date is found. Do not include any other text.",
-    pdfBuffer
+    pdfBuffer,
+    modelKey
   );
 }
 
 async function extractInvoiceSender(
-  pdfBuffer: ArrayBuffer
+  pdfBuffer: ArrayBuffer,
+  modelKey: keyof typeof AI_MODELS = "gemini"
 ): Promise<{
   value: string | null;
   error: string | null;
@@ -166,12 +179,14 @@ async function extractInvoiceSender(
 }> {
   return await askLLM(
     "Extract the sender/vendor name from this invoice PDF. Return ONLY the company or person name, or 'null' if not found. Do not include any other text.",
-    pdfBuffer
+    pdfBuffer,
+    modelKey
   );
 }
 
 async function extractTextFromPDF(
-  pdfBuffer: ArrayBuffer
+  pdfBuffer: ArrayBuffer,
+  modelKey: keyof typeof AI_MODELS = "gemini"
 ): Promise<{
   value: string | null;
   error: string | null;
@@ -179,12 +194,14 @@ async function extractTextFromPDF(
 }> {
   return await askLLM(
     "Extract all text content from this PDF document. Return the complete text as plain markdown, preserving line breaks and structure. If the document contains no readable text, return 'null'.",
-    pdfBuffer
+    pdfBuffer,
+    modelKey
   );
 }
 
 async function extractInvoiceAmount(
-  pdfBuffer: ArrayBuffer
+  pdfBuffer: ArrayBuffer,
+  modelKey: keyof typeof AI_MODELS = "gemini"
 ): Promise<{
   value: string | null;
   error: string | null;
@@ -192,6 +209,7 @@ async function extractInvoiceAmount(
 }> {
   return await askLLM(
     "Extract the total invoice amount and currency from this PDF. Return ONLY the amount and currency in the format 'amount|currency' (e.g., '50.80|BGN', '10000|USD', '4.51|EUR'). If no amount is found, return 'null'. Do not include any other text.",
-    pdfBuffer
+    pdfBuffer,
+    modelKey
   );
 }

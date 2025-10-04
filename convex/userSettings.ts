@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
@@ -19,9 +19,24 @@ export const getUserSettings = query({
   },
 });
 
+export const getUserSettingsInternal = internalQuery({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const settings = await ctx.db
+      .query("userSettings")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
+
+    return settings;
+  },
+});
+
 export const updateUserSettings = mutation({
   args: {
     vatId: v.optional(v.string()),
+    aiModel: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -37,6 +52,7 @@ export const updateUserSettings = mutation({
     if (existingSettings) {
       await ctx.db.patch(existingSettings._id, {
         vatId: args.vatId,
+        aiModel: args.aiModel,
         updatedAt: Date.now(),
       });
       return existingSettings._id;
@@ -44,6 +60,7 @@ export const updateUserSettings = mutation({
       return await ctx.db.insert("userSettings", {
         userId,
         vatId: args.vatId,
+        aiModel: args.aiModel,
         updatedAt: Date.now(),
       });
     }
