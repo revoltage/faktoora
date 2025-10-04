@@ -18,6 +18,7 @@ export const StatementsSection = ({ monthKey, statements, generateUploadUrl }: S
   const addStatement = useMutation(api.invoices.addStatement);
   const deleteStatement = useMutation(api.invoices.deleteStatement);
   const statementInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleUploadStatement = async (file: File, fileType: "pdf" | "csv") => {
     try {
@@ -53,54 +54,87 @@ export const StatementsSection = ({ monthKey, statements, generateUploadUrl }: S
     }
   };
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    for (const file of files) {
+      if (file.type === "application/pdf") {
+        void handleUploadStatement(file, "pdf");
+      } else if (file.type === "text/csv" || file.name.endsWith(".csv")) {
+        void handleUploadStatement(file, "csv");
+      }
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
   return (
-    <Card className="mb-3 border border-gray-200 shadow-sm">
+    <Card
+      className={`mb-3 border border-gray-200 shadow-sm transition-colors ${
+        isDragging ? "border-blue-500 bg-blue-50" : ""
+      }`}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+    >
       <CardHeader className="p-3 pb-2">
-        <CardTitle className="text-sm font-semibold tracking-tight">Monthly Statements</CardTitle>
+        <CardTitle className="text-sm font-semibold tracking-tight flex items-center justify-between">
+          Monthly Statements
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="h-5 px-2 text-[10px]"
+              onClick={() => statementInputRef.current?.click()}
+            >
+              Upload PDF
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              className="h-5 px-2 text-[10px] bg-green-600 hover:bg-green-700"
+              onClick={() => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = ".csv";
+                input.multiple = true;
+                input.onchange = (e) => {
+                  const files = Array.from((e.target as HTMLInputElement).files || []);
+                  for (const file of files) {
+                    void handleUploadStatement(file, "csv");
+                  }
+                };
+                input.click();
+              }}
+            >
+              Upload CSV(s)
+            </Button>
+          </div>
+        </CardTitle>
       </CardHeader>
-      <CardContent className="p-3 pt-0">
-        <div className="flex gap-2 mb-3">
-          <Button
-            size="sm"
-            className="h-7 px-2 text-[11px]"
-            onClick={() => statementInputRef.current?.click()}
-          >
-            Upload PDF
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            className="h-7 px-2 text-[11px] bg-green-600 hover:bg-green-700"
-            onClick={() => {
-              const input = document.createElement("input");
-              input.type = "file";
-              input.accept = ".csv";
-              input.multiple = true;
-              input.onchange = (e) => {
-                const files = Array.from((e.target as HTMLInputElement).files || []);
-                for (const file of files) {
-                  void handleUploadStatement(file, "csv");
-                }
-              };
-              input.click();
-            }}
-          >
-            Upload CSV(s)
-          </Button>
-          <input
-            ref={statementInputRef}
-            type="file"
-            accept=".pdf"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                void handleUploadStatement(file, "pdf");
-              }
-              e.target.value = "";
-            }}
-          />
-        </div>
+      <CardContent
+        className={`p-3 pt-0 transition-opacity ${isDragging ? "opacity-50" : ""}`}
+      >
+        <input
+          ref={statementInputRef}
+          type="file"
+          accept=".pdf"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              void handleUploadStatement(file, "pdf");
+            }
+            e.target.value = "";
+          }}
+        />
         {statements.length === 0 ? (
           <p className="text-xs text-muted-foreground">No statements uploaded yet</p>
         ) : (
