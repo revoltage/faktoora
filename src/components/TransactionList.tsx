@@ -288,7 +288,7 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                     variant="ghost"
                     size="sm"
                     onClick={(e) => handleBindingClick(transaction, e)}
-                    className={`h-8 w-8 p-0 ${
+                    className={`h-8 w-8 p-0 rounded-full ${
                       transaction.boundInvoiceStorageId
                         ? "text-green-600 hover:text-green-700"
                         : "text-orange-500 hover:text-orange-600"
@@ -300,14 +300,14 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                     }
                   >
                     {transaction.boundInvoiceStorageId ? (
-                      <CheckCircle className="h-5 w-5" />
+                      <CheckCircle className="h-5 w-5 rounded-full" />
                     ) : (
-                      <AlertCircle className="h-5 w-5" />
+                      <AlertCircle className="h-5 w-5 rounded-full" />
                     )}
                   </Button>
                 ) : (
                   <div className="h-8 w-8 flex items-center justify-center">
-                    <Minus className="h-4 w-4 text-gray-300" />
+                    <Minus className="h-4 w-4 text-gray-300 rounded-full" />
                   </div>
                 )}
               </div>

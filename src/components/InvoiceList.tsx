@@ -388,7 +388,7 @@ export const InvoiceList = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                    className="!h-4 !w-4 p-0 mr-1 text-gray-400 hover:text-gray-600 rounded-full"
                     onClick={(e) => {
                       e.stopPropagation();
                       void deleteIncomingInvoice({
@@ -397,7 +397,7 @@ export const InvoiceList = ({
                       });
                     }}
                   >
-                    <XIcon className="h-5 w-5" />
+                    <XIcon className="!h-2.5 !w-2.5" />
                   </Button>
                 </div>
               </div>
