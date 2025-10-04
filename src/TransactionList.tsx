@@ -2,6 +2,8 @@ import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Badge } from "./components/ui/badge";
 import { ScrollArea } from "./components/ui/scroll-area";
+import { TransactionDetailsModal } from "./components/TransactionDetailsModal";
+import { useState } from "react";
 
 interface TransactionListProps {
   monthKey: string;
@@ -9,6 +11,8 @@ interface TransactionListProps {
 
 export function TransactionList({ monthKey }: TransactionListProps) {
   const transactions = useQuery(api.invoices.getMergedTransactions, { monthKey });
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (!transactions) {
     return (
@@ -59,6 +63,16 @@ export function TransactionList({ monthKey }: TransactionListProps) {
     }
   };
 
+  const handleTransactionClick = (transaction: any) => {
+    setSelectedTransaction(transaction);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedTransaction(null);
+  };
+
   const getAmountColor = (amount: string) => {
     if (!amount) return 'text-gray-500';
     const numAmount = parseFloat(amount);
@@ -80,7 +94,8 @@ export function TransactionList({ monthKey }: TransactionListProps) {
           {transactions.map((transaction, index) => (
             <div
               key={`${transaction.id}-${index}`}
-              className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/30 transition-colors"
+              className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/30 transition-colors cursor-pointer"
+              onClick={() => handleTransactionClick(transaction)}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <span className="text-base flex-shrink-0">
@@ -91,7 +106,7 @@ export function TransactionList({ monthKey }: TransactionListProps) {
                     <span className="font-medium text-foreground truncate text-sm">
                       {transaction.description || 'No description'}
                     </span>
-                    <Badge className="uppercase text-[10px] bg-purple-600 text-white border-purple-600">
+                    <Badge className="uppercase text-[8px] bg-gray-200 text-gray-600 border-gray-200 px-1 py-0">
                       {transaction.type}
                     </Badge>
                   </div>
@@ -115,16 +130,17 @@ export function TransactionList({ monthKey }: TransactionListProps) {
                     {formatAmount(transaction.origAmount, transaction.origCurrency)}
                   </div>
                 )}
-                {transaction.balance && (
-                  <div className="text-[10px] text-muted-foreground">
-                    Balance: {formatAmount(transaction.balance, transaction.paymentCurrency)}
-                  </div>
-                )}
               </div>
             </div>
           ))}
         </div>
       </ScrollArea>
+      
+      <TransactionDetailsModal
+        transaction={selectedTransaction}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }
