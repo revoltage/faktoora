@@ -32,12 +32,9 @@ function Content() {
       </Authenticated>
       <Unauthenticated>
         <div className="flex items-center justify-center min-h-screen p-4">
-          <div className="w-full max-w-md">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                Invoice Manager
-              </h1>
-              <p className="text-slate-600 text-sm">Streamline your invoicing workflow</p>
+          <div className="w-full max-w-sm">
+            <div className="text-center mb-4">
+              <h1 className="text-sm font-medium text-foreground">Invoice Manager</h1>
             </div>
             <SignInForm />
           </div>
