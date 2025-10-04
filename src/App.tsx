@@ -2,7 +2,7 @@ import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { Toaster } from "sonner";
 
 import { api } from "../convex/_generated/api";
-import { InvoiceManager } from "./InvoiceManager";
+import { InvoiceManagerPage } from "./InvoiceManager";
 import { SignInForm } from "./SignInForm";
 
 export default function App() {
@@ -28,13 +28,15 @@ function Content() {
   return (
     <>
       <Authenticated>
-        <InvoiceManager />
+        <InvoiceManagerPage />
       </Authenticated>
       <Unauthenticated>
         <div className="flex items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-sm">
             <div className="text-center mb-4">
-              <h1 className="text-sm font-medium text-foreground">Invoice Manager</h1>
+              <h1 className="text-sm font-medium text-foreground">
+                Invoice Manager
+              </h1>
             </div>
             <SignInForm />
           </div>
