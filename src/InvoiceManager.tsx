@@ -3,9 +3,11 @@ import { api } from "../convex/_generated/api";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "./components/ui/button";
+import { Header } from "./components/Header";
 import { InvoiceDetailsModal } from "./components/InvoiceDetailsModal";
 import { StatementsSection } from "./components/StatementsSection";
 import { InvoiceList } from "./components/InvoiceList";
+import { SignOutButton } from "./SignOutButton";
 
 interface UploadingInvoice {
   fileName: string;
@@ -44,16 +46,19 @@ export function InvoiceManager() {
     setCurrentMonth(monthKey);
   };
 
-  const monthData = useQuery(api.invoices.getMonthData, { monthKey: currentMonth });
+  const monthData = useQuery(api.invoices.getMonthData, {
+    monthKey: currentMonth,
+  });
   const generateUploadUrl = useMutation(api.invoices.generateUploadUrl);
   const addIncomingInvoice = useMutation(api.invoices.addIncomingInvoice);
   const deleteIncomingInvoice = useMutation(api.invoices.deleteIncomingInvoice);
   const updateInvoiceName = useMutation(api.invoices.updateInvoiceName);
 
-  const [uploadingInvoices, setUploadingInvoices] = useState<UploadingInvoice[]>([]);
+  const [uploadingInvoices, setUploadingInvoices] = useState<
+    UploadingInvoice[]
+  >([]);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
 
   const openInvoiceModal = (invoice: any) => {
     setSelectedInvoice(invoice);
@@ -81,8 +86,8 @@ export function InvoiceManager() {
   const handleUpdateInvoiceName = async (storageId: any, name: string) => {
     try {
       await updateInvoiceName({
-          monthKey: currentMonth,
-          storageId,
+        monthKey: currentMonth,
+        storageId,
         name,
       });
     } catch {
@@ -113,8 +118,6 @@ export function InvoiceManager() {
     return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
   };
 
-
-
   if (!monthData) {
     return (
       <div className="flex justify-center items-center">
@@ -124,55 +127,69 @@ export function InvoiceManager() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-3">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 px-2 text-[11px]"
-          onClick={goToPreviousMonth}
-        >
-          ← Previous
-        </Button>
-        <h1 className="text-base font-semibold text-primary tracking-tight">
-          {formatMonthDisplay(currentMonth)}
-        </h1>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 px-2 text-[11px]"
-          onClick={goToNextMonth}
-        >
-          Next →
-        </Button>
-      </div>
-
-      <StatementsSection
-        monthKey={currentMonth}
-        statements={monthData.statements}
-        generateUploadUrl={generateUploadUrl}
+    <div className="">
+      <Header
+        left={
+          <h2 className="text-sm font-semibold text-primary tracking-tight">
+            Invoice Manager
+          </h2>
+        }
+        center={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 text-[11px]"
+              onClick={goToPreviousMonth}
+            >
+              ← Prev
+            </Button>
+            <span className="text-sm font-medium text-primary">
+              {formatMonthDisplay(currentMonth)}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 text-[11px]"
+              onClick={goToNextMonth}
+            >
+              Next →
+            </Button>
+          </div>
+        }
+        right={<SignOutButton />}
       />
 
-      <InvoiceList
-        monthKey={currentMonth}
-        incomingInvoices={monthData.incomingInvoices}
-        uploadingInvoices={uploadingInvoices}
-        generateUploadUrl={generateUploadUrl}
-        addIncomingInvoice={addIncomingInvoice}
-        deleteIncomingInvoice={deleteIncomingInvoice}
-        onInvoiceClick={openInvoiceModal}
-        onUploadingStateChange={setUploadingInvoices}
-      />
+      <main className="flex-1 p-4 max-w-3xl mx-auto">
+        <div className="mt-4">
+          <StatementsSection
+            monthKey={currentMonth}
+            statements={monthData.statements}
+            generateUploadUrl={generateUploadUrl}
+          />
 
-      {/* Invoice Details Modal */}
-      <InvoiceDetailsModal
-        invoice={selectedInvoice}
-        isOpen={isModalOpen}
-        onClose={closeInvoiceModal}
-        onDelete={handleDeleteInvoice}
-        onUpdateName={handleUpdateInvoiceName}
-        monthKey={currentMonth}
-      />
+          <InvoiceList
+            monthKey={currentMonth}
+            incomingInvoices={monthData.incomingInvoices}
+            uploadingInvoices={uploadingInvoices}
+            generateUploadUrl={generateUploadUrl}
+            addIncomingInvoice={addIncomingInvoice}
+            deleteIncomingInvoice={deleteIncomingInvoice}
+            onInvoiceClick={openInvoiceModal}
+            onUploadingStateChange={setUploadingInvoices}
+          />
+        </div>
+
+        {/* Invoice Details Modal */}
+        <InvoiceDetailsModal
+          invoice={selectedInvoice}
+          isOpen={isModalOpen}
+          onClose={closeInvoiceModal}
+          onDelete={handleDeleteInvoice}
+          onUpdateName={handleUpdateInvoiceName}
+          monthKey={currentMonth}
+        />
+      </main>
     </div>
   );
 }

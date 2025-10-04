@@ -110,7 +110,7 @@ export function TransactionList({ monthKey }: TransactionListProps) {
                     <span className="font-medium text-foreground truncate text-xs">
                       {transaction.description || "No description"}
                     </span>
-                    <Badge className="uppercase text-[8px] bg-gray-200 text-gray-600 border-gray-200 px-1 py-0">
+                    <Badge className="uppercase text-[8px] bg-gray-100 text-gray-600 border-gray-200 px-1 py-0 shadow-none">
                       {transaction.type}
                     </Badge>
                   </div>
