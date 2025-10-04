@@ -48,6 +48,7 @@ export function InvoiceManager() {
   const generateUploadUrl = useMutation(api.invoices.generateUploadUrl);
   const addIncomingInvoice = useMutation(api.invoices.addIncomingInvoice);
   const deleteIncomingInvoice = useMutation(api.invoices.deleteIncomingInvoice);
+  const updateInvoiceName = useMutation(api.invoices.updateInvoiceName);
 
   const [uploadingInvoices, setUploadingInvoices] = useState<UploadingInvoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -74,6 +75,19 @@ export function InvoiceManager() {
       toast.success("🗑️ Invoice deleted successfully");
     } catch {
       toast.error("Failed to delete invoice");
+    }
+  };
+
+  const handleUpdateInvoiceName = async (storageId: any, name: string) => {
+    try {
+      await updateInvoiceName({
+          monthKey: currentMonth,
+          storageId,
+        name,
+      });
+    } catch {
+      toast.error("Failed to update invoice name");
+      throw new Error("Failed to update invoice name");
     }
   };
 
@@ -156,6 +170,8 @@ export function InvoiceManager() {
         isOpen={isModalOpen}
         onClose={closeInvoiceModal}
         onDelete={handleDeleteInvoice}
+        onUpdateName={handleUpdateInvoiceName}
+        monthKey={currentMonth}
       />
     </div>
   );

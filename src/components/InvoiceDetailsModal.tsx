@@ -2,15 +2,23 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Input } from "./ui/input";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface InvoiceDetailsModalProps {
   invoice: any;
   isOpen: boolean;
   onClose: () => void;
   onDelete: (storageId: any) => Promise<void>;
+  onUpdateName: (storageId: any, name: string) => Promise<void>;
+  monthKey: string;
 }
 
-export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete }: InvoiceDetailsModalProps) => {
+export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpdateName, monthKey }: InvoiceDetailsModalProps) => {
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(invoice?.name || "");
+
   if (!invoice) return null;
 
   const formatDate = (dateStr: string | number) => {
@@ -36,6 +44,21 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete }: Invo
       return <Badge variant="default" className="text-xs bg-green-600">Complete</Badge>;
     }
     return <Badge variant="outline" className="text-xs">N/A</Badge>;
+  };
+
+  const handleSaveName = async () => {
+    try {
+      await onUpdateName(invoice.storageId, editedName);
+      setIsEditingName(false);
+      toast.success("✅ Name updated successfully");
+    } catch {
+      toast.error("Failed to update name");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditedName(invoice.name || "");
+    setIsEditingName(false);
   };
 
   return (
@@ -132,11 +155,40 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete }: Invo
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <span className="text-sm font-medium text-muted-foreground">Name:</span>
-                  <p className="mt-1 text-sm">
-                    {invoice.name || (
-                      <span className="text-muted-foreground italic">Not available</span>
+                  <div className="mt-1 flex items-center gap-2">
+                    {isEditingName ? (
+                      <>
+                        <Input
+                          value={editedName}
+                          onChange={(e) => setEditedName(e.target.value)}
+                          className="text-sm"
+                          autoFocus
+                        />
+                        <Button size="sm" onClick={handleSaveName}>
+                          Save
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm">
+                          {invoice.name || (
+                            <span className="text-muted-foreground italic">Not available</span>
+                          )}
+                        </p>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => setIsEditingName(true)}
+                          className="text-xs"
+                        >
+                          Edit
+                        </Button>
+                      </>
                     )}
-                  </p>
+                  </div>
                 </div>
                 
                 <div>

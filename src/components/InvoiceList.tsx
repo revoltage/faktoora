@@ -132,10 +132,10 @@ export const InvoiceList = ({
           Incoming Invoices
           <Button
             size="sm"
-            className="h-5 w-5 p-0 text-xs"
+            className="h-5 px-2 text-[10px]"
             onClick={() => invoiceInputRef.current?.click()}
           >
-            +
+            + Upload Invoice
           </Button>
         </CardTitle>
       </CardHeader>

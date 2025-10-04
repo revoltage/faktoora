@@ -435,6 +435,45 @@ export const updateInvoiceParsedText = internalMutation({
   },
 });
 
+export const updateInvoiceName = mutation({
+  args: {
+    monthKey: v.string(),
+    storageId: v.id("_storage"),
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const monthData = await ctx.db
+      .query("months")
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", userId).eq("monthKey", args.monthKey)
+      )
+      .unique();
+
+    if (!monthData) {
+      throw new Error("Month data not found");
+    }
+
+    const updatedInvoices = monthData.incomingInvoices.map((invoice) => {
+      if (invoice.storageId === args.storageId) {
+        return {
+          ...invoice,
+          name: args.name,
+        };
+      }
+      return invoice;
+    });
+
+    await ctx.db.patch(monthData._id, {
+      incomingInvoices: updatedInvoices,
+    });
+  },
+});
+
 export const updateInvoiceAnalysisBigError = internalMutation({
   args: {
     monthKey: v.string(),
