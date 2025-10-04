@@ -1,14 +1,30 @@
 import { useQuery } from "convex/react";
-import { FileIcon, UserIcon } from "lucide-react";
 import { useState } from "react";
 
 import { api } from "../convex/_generated/api";
 import { TransactionDetailsModal } from "./components/TransactionDetailsModal";
 import { Badge } from "./components/ui/badge";
+import { Button } from "./components/ui/button";
+import { getInvoiceHelperLinks } from "./lib/transactionHelperLinks";
 
 interface TransactionListProps {
   monthKey: string;
 }
+
+const cfg = {
+  // Filtering constants
+  hidePositiveAmounts: true, // set to true to hide positive amounts
+  hideExchangeRows: true, // set to true to hide rows with exchangeRate filled
+  hideRevolutBusinessFee: true, // set to true to hide rows with description 'Revolut Business Fee'
+
+  // Allowed transaction types (uncomment to allow more)
+  allowedTransactionTypes: [
+    "CARD_PAYMENT",
+    // "FEE",
+    // "EXCHANGE",
+    // "TOPUP",
+  ],
+};
 
 export function TransactionList({ monthKey }: TransactionListProps) {
   const transactions = useQuery(api.invoices.getMergedTransactions, {
@@ -16,6 +32,7 @@ export function TransactionList({ monthKey }: TransactionListProps) {
   });
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showFiltered, setShowFiltered] = useState(true);
 
   if (!transactions) {
     return (
@@ -25,10 +42,64 @@ export function TransactionList({ monthKey }: TransactionListProps) {
     );
   }
 
+  // Filter transactions based on constants
+  const filteredTransactions = transactions.filter((transaction) => {
+    // Filter by allowed transaction types
+    if (!cfg.allowedTransactionTypes.includes(transaction.type)) {
+      return false;
+    }
+
+    if (cfg.hidePositiveAmounts && transaction.amount) {
+      const numAmount = parseFloat(transaction.amount);
+      if (!isNaN(numAmount) && numAmount > 0) return false;
+    }
+
+    if (cfg.hideExchangeRows && transaction.exchangeRate) {
+      return false;
+    }
+
+    if (
+      cfg.hideRevolutBusinessFee &&
+      transaction.description?.toLowerCase().includes("revolut business fee")
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
   if (transactions.length === 0) {
     return (
       <div className="text-gray-500 text-sm py-4">
         📊 No transactions found in CSV statements
+      </div>
+    );
+  }
+
+  if (showFiltered && filteredTransactions.length === 0) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-foreground tracking-tight">
+            📊 Transactions (0/{transactions.length})
+          </h3>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFiltered(false)}
+              className="text-[10px] h-6 px-2"
+            >
+              Show All
+            </Button>
+            <div className="text-[11px] text-muted-foreground">
+              Merged from CSV statements
+            </div>
+          </div>
+        </div>
+        <div className="text-gray-500 text-sm py-4">
+          📊 No transactions need invoices (all filtered out)
+        </div>
       </div>
     );
   }
@@ -83,24 +154,50 @@ export function TransactionList({ monthKey }: TransactionListProps) {
     return numAmount < 0 ? "text-red-600" : "text-green-600";
   };
 
+  // Helper function to find matching links for a transaction
+  const findHelperLinks = (description: string) => {
+    return getInvoiceHelperLinks(description);
+  };
+
+  const displayTransactions = showFiltered
+    ? filteredTransactions
+    : transactions;
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold text-foreground tracking-tight">
-          📊 Transactions ({transactions.length})
+          📊 Transactions ({displayTransactions.length}
+          {showFiltered && filteredTransactions.length !== transactions.length
+            ? `/${transactions.length}`
+            : ""}
+          )
         </h3>
-        <div className="text-[11px] text-muted-foreground">
-          Merged from CSV statements
+        <div className="flex items-center gap-2">
+          <div className="text-[11px] text-muted-foreground">
+            Merged from CSV statements
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFiltered(!showFiltered)}
+            className="text-[10px] h-6 px-2"
+          >
+            {showFiltered ? "Show All" : "Hide Non-Invoice"}
+          </Button>
         </div>
       </div>
 
       <div className="space-y-0">
-        {transactions.map((transaction, index) => (
-          <div
-            key={`${transaction.id}-${index}`}
-            className="flex items-center justify-between py-1 border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
-            onClick={() => handleTransactionClick(transaction)}
-          >
+        {displayTransactions.map((transaction, index) => {
+          const helperLinks = findHelperLinks(transaction.description || "");
+
+          return (
+            <div
+              key={`${transaction.id}-${index}`}
+              className="flex items-center justify-between py-1 border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+              onClick={() => handleTransactionClick(transaction)}
+            >
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <span className="text-base flex-shrink-0">
                   {getTransactionIcon(transaction.type)}
@@ -121,18 +218,22 @@ export function TransactionList({ monthKey }: TransactionListProps) {
                       )}
                     </span>
 
-                    {transaction.sourceFile && (
-                      <span className="truncate">
-                        <FileIcon className="h-2 w-2 inline" />{" "}
-                        {transaction.sourceFile}
-                      </span>
-                    )}
-                    {transaction.payer && (
-                      <span className="truncate">
-                        <UserIcon className="h-2 w-2 inline" />{" "}
-                        {transaction.payer}
-                      </span>
-                    )}
+                     {helperLinks.length > 0 && (
+                       <div className="flex gap-1">
+                         {helperLinks.map((link, linkIndex) => (
+                           <a
+                             key={linkIndex}
+                             href={link}
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             onClick={(e) => e.stopPropagation()}
+                             className="text-blue-600 hover:text-blue-800 hover:underline text-[9px]"
+                           >
+                             {link.replace(/^https?:\/\//, '')}
+                           </a>
+                         ))}
+                       </div>
+                     )}
                   </div>
                 </div>
               </div>
@@ -156,7 +257,8 @@ export function TransactionList({ monthKey }: TransactionListProps) {
                   )}
               </div>
             </div>
-          ))}
+          );
+        })}
       </div>
 
       <TransactionDetailsModal
