@@ -9,12 +9,14 @@ interface EmailDraftProps {
   invoices: any[];
   statements: any[];
   monthKey: string;
+  uploadingInvoices?: { fileName: string; uploadId: string }[];
 }
 
 export const EmailDraft = ({
   invoices,
   statements,
   monthKey,
+  uploadingInvoices = [],
 }: EmailDraftProps) => {
   // Check if there are PDF statements or invoices
   const hasPdfStatements = statements.some((stmt) => stmt.fileType === "pdf");
@@ -43,6 +45,18 @@ export const EmailDraft = ({
       });
   };
 
+  const renderUploadingInvoices = () => {
+    // renders • ${uploadingInvoice.fileName} (uploading...)\n for each uploading invoice
+    return uploadingInvoices.map((uploadingInvoice) => (
+      <div
+        key={uploadingInvoice.uploadId}
+        className="text-muted-foreground italic animate-pulse"
+      >
+        • {uploadingInvoice.fileName} (uploading...)
+      </div>
+    ));
+  };
+
   return (
     <Card className="mb-3 border border-gray-200 shadow-sm">
       <CardHeader className="p-3 pb-2">
@@ -68,6 +82,7 @@ export const EmailDraft = ({
         {/* <pre className="whitespace-pre-wrap text-[10px] text-muted-foreground bg-gray-50 p-3 rounded border font-[Arial, sans-serif] font-normal"> */}
         <pre className="whitespace-pre-wrap text-[10px] text-muted-foreground font-[Arial, sans-serif] font-normal">
           {emailContent}
+          {renderUploadingInvoices()}
         </pre>
       </CardContent>
     </Card>
@@ -123,7 +138,12 @@ function createEmailDraft(
 
   // Add invoices list
   if (hasInvoices) {
-    invoices.forEach((invoice) => {
+    // Sort invoices by uploadedAt (oldest first)
+    const sortedInvoices = [...invoices].sort((a, b) => 
+      new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime()
+    );
+    
+    sortedInvoices.forEach((invoice) => {
       // Priority: invoice name -> sender -> filename
       const displayName =
         invoice.name || invoice.analysis?.sender?.value || invoice.fileName;

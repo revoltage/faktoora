@@ -81,7 +81,7 @@ export function InvoiceManagerPage() {
             >
               ← Prev
             </Button>
-            <span className="text-sm font-medium text-primary">
+            <span className="text-sm font-medium">
               {formatMonthDisplay(currentMonth)}
             </span>
             <Button
@@ -176,6 +176,7 @@ export function InvoiceManagerPageContent({
           invoices={monthData.incomingInvoices}
           statements={monthData.statements}
           monthKey={currentMonth}
+          uploadingInvoices={uploadingInvoices}
         />
 
         <StatementsSection

@@ -1,5 +1,6 @@
 import { useQuery } from "convex/react";
-import { CheckIcon, XIcon } from "lucide-react";
+import { CheckIcon, XIcon, Loader2 } from "lucide-react";
+import type { Dispatch, SetStateAction } from "react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -33,25 +34,31 @@ interface InvoiceListProps {
   addIncomingInvoice: any;
   deleteIncomingInvoice: any;
   onInvoiceClick: (invoice: any) => void;
-  onUploadingStateChange: (invoices: UploadingInvoice[]) => void;
+  onUploadingStateChange: Dispatch<SetStateAction<UploadingInvoice[]>>;
   deleteAllInvoices?: any;
 }
 
 const InvoiceSkeleton = ({ fileName }: { fileName: string }) => (
-  <div className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200 opacity-60">
-    <div className="flex items-center gap-3 flex-1">
-      <span className="text-blue-600 hover:underline font-medium">
-        {fileName}
-      </span>
-      <div className="flex items-center gap-2 text-xs">
-        <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded animate-pulse">
-          🔄 Uploading...
-        </span>
-        <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded animate-pulse">
-          🔄 Processing...
-        </span>
+  <div className="flex items-center justify-between pt-0.5 pb-1 border-t border-gray-100 hover:bg-gray-50 transition-colors opacity-60">
+    <div className="flex items-center gap-2 flex-1 min-w-0">
+      <span className="text-base flex-shrink-0">📄</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-0.5">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-xs font-medium text-blue-600 truncate">
+              {fileName}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-yellow-600">Uploading...</span>
+          </div>
+        </div>
       </div>
-      <span className="text-xs text-gray-500 ml-auto">Just now</span>
+    </div>
+    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+      <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
     </div>
   </div>
 );
@@ -95,7 +102,7 @@ export const InvoiceList = ({
     };
 
     // Add to uploading state immediately
-    onUploadingStateChange([...uploadingInvoices, uploadingInvoice]);
+    onUploadingStateChange((prev) => [...prev, uploadingInvoice]);
 
     try {
       const uploadUrl = await generateUploadUrl();
@@ -114,8 +121,8 @@ export const InvoiceList = ({
       toast.error("Failed to upload invoice");
     } finally {
       // Remove from uploading state
-      onUploadingStateChange(
-        uploadingInvoices.filter((inv) => inv.uploadId !== uploadId)
+      onUploadingStateChange((prev) =>
+        prev.filter((inv) => inv.uploadId !== uploadId)
       );
     }
   };
