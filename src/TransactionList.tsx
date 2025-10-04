@@ -94,11 +94,11 @@ export function TransactionList({ monthKey }: TransactionListProps) {
         </div>
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-0">
         {transactions.map((transaction, index) => (
           <div
             key={`${transaction.id}-${index}`}
-            className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/30 transition-colors cursor-pointer"
+            className="flex items-center justify-between py-1 border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
             onClick={() => handleTransactionClick(transaction)}
           >
               <div className="flex items-center gap-2 flex-1 min-w-0">
