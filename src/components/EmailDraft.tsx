@@ -52,7 +52,7 @@ export const EmailDraft = ({
         key={uploadingInvoice.uploadId}
         className="text-muted-foreground italic animate-pulse"
       >
-        • {uploadingInvoice.fileName} (uploading...)
+        • — Uploading {uploadingInvoice.fileName} —
       </div>
     ));
   };
