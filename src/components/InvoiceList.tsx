@@ -246,7 +246,7 @@ export const InvoiceList = ({
             No invoices uploaded yet
           </p>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-0">
             {uploadingInvoices.map((uploadingInvoice) => (
               <InvoiceSkeleton
                 key={uploadingInvoice.uploadId}
@@ -256,16 +256,16 @@ export const InvoiceList = ({
             {incomingInvoices.map((invoice) => (
               <div
                 key={invoice.storageId}
-                className="group flex items-start justify-between p-2 rounded-md border bg-card cursor-pointer hover:bg-gray-50 transition-colors relative"
+                className="flex items-center justify-between pt-0.5 pb-1 border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
                 onClick={() => onInvoiceClick(invoice)}
               >
-                <div className="flex items-start gap-2 flex-1 min-w-0">
-                  <div className="text-gray-400 mt-0.5">📄</div>
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="text-base flex-shrink-0">📄</span>
                   <div className="flex-1 min-w-0">
                     {/* Main row: Sender + Date on left, Amount on right */}
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between mb-0.5">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="text-sm text-blue-600 font-medium truncate">
+                        <span className="text-xs font-medium text-blue-600 truncate">
                           {invoice.name ?? invoice.fileName}
                         </span>
 
@@ -283,7 +283,7 @@ export const InvoiceList = ({
                               Sender Error
                             </span>
                           ) : invoice.analysis.sender.value ? (
-                            <CheckIcon className="inline-block w-3 text-green-600" />
+                            <CheckIcon className="inline-block w-3 h-3 text-green-600" />
                           ) : // invoice.analysis.sender.value
                           invoice.analysis.sender.lastUpdated === null ? (
                             <span className="text-yellow-600">
@@ -293,6 +293,7 @@ export const InvoiceList = ({
                             <span className="text-gray-400">N/A</span>
                           )}
                         </span>
+                        
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
                           {invoice.analysis.date.error ? (
                             <span
@@ -341,6 +342,7 @@ export const InvoiceList = ({
                         )}
                       </span>
                     </div>
+                    
                     {/* Tiny row: Filename + Uploaded at + Parse status on left, VAT Status on right */}
                     <div className="flex items-center justify-between text-[9px] text-muted-foreground">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -373,20 +375,22 @@ export const InvoiceList = ({
                     </div>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-[11px] text-red-600 hover:text-red-700 ml-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void deleteIncomingInvoice({
-                      monthKey,
-                      storageId: invoice.storageId,
-                    });
-                  }}
-                >
-                  <XIcon className="inline-block w-2.5 h-2.5" />
-                </Button>
+                <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void deleteIncomingInvoice({
+                        monthKey,
+                        storageId: invoice.storageId,
+                      });
+                    }}
+                  >
+                    <XIcon className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
