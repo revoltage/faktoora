@@ -189,7 +189,7 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
             Merged from CSV statements
           </div>
           <Button
-            variant="outline"
+            variant="link"
             size="sm"
             onClick={() => setShowFiltered(!showFiltered)}
             className="text-[10px] h-6 px-2"

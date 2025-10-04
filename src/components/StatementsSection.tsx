@@ -144,7 +144,7 @@ export const StatementsSection = ({
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={handleDeleteAllStatements}
+                      onClick={() => void handleDeleteAllStatements()}
                       className="bg-red-600 hover:bg-red-700"
                     >
                       Delete All
