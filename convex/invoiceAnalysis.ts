@@ -63,8 +63,20 @@ export const analyzeInvoice = internalAction({
         }
       );
 
+      const amountPromise = extractInvoiceAmount(pdfBuffer).then(
+        async (amountResult) => {
+          await ctx.runMutation(internal.invoices.updateInvoiceAmount, {
+            monthKey: args.monthKey,
+            storageId: args.storageId,
+            userId: args.userId,
+            amount: amountResult,
+          });
+          return amountResult;
+        }
+      );
+
       // Wait for all to complete (for error handling)
-      await Promise.all([datePromise, senderPromise, parsedTextPromise]);
+      await Promise.all([datePromise, senderPromise, parsedTextPromise, amountPromise]);
     } catch (error) {
       console.error("🔍 Error in invoice analysis (big error):", error);
       const errorMessage =
@@ -167,6 +179,19 @@ async function extractTextFromPDF(
 }> {
   return await askLLM(
     "Extract all text content from this PDF document. Return the complete text as plain markdown, preserving line breaks and structure. If the document contains no readable text, return 'null'.",
+    pdfBuffer
+  );
+}
+
+async function extractInvoiceAmount(
+  pdfBuffer: ArrayBuffer
+): Promise<{
+  value: string | null;
+  error: string | null;
+  lastUpdated: number;
+}> {
+  return await askLLM(
+    "Extract the total invoice amount and currency from this PDF. Return ONLY the amount and currency in the format 'amount|currency' (e.g., '50.80|BGN', '10000|USD', '4.51|EUR'). If no amount is found, return 'null'. Do not include any other text.",
     pdfBuffer
   );
 }

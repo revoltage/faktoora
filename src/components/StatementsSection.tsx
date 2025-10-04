@@ -2,7 +2,7 @@ import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import { TransactionList } from "../TransactionList";
+import { TransactionList } from "./TransactionList";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";

@@ -9,6 +9,7 @@ const analysisResult = v.object({
   lastUpdated: v.union(v.number(), v.null()),
 });
 
+
 // Helper function to get filename without extension
 function getFileNameWithoutExtension(fileName: string): string {
   const lastDotIndex = fileName.lastIndexOf('.');
@@ -139,6 +140,11 @@ export const addIncomingInvoice = mutation({
           lastUpdated: null,
         },
         parsedText: {
+          value: null,
+          error: null,
+          lastUpdated: null,
+        },
+        amount: {
           value: null,
           error: null,
           lastUpdated: null,
@@ -287,6 +293,7 @@ export const updateInvoiceAnalysis = internalMutation({
     date: analysisResult,
     sender: analysisResult,
     parsedText: analysisResult,
+    amount: analysisResult,
     analysisBigError: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
@@ -309,6 +316,7 @@ export const updateInvoiceAnalysis = internalMutation({
             date: args.date,
             sender: args.sender,
             parsedText: args.parsedText,
+            amount: args.amount,
             analysisBigError: args.analysisBigError,
           },
         };
@@ -465,6 +473,44 @@ export const updateInvoiceName = mutation({
         return {
           ...invoice,
           name: args.name,
+        };
+      }
+      return invoice;
+    });
+
+    await ctx.db.patch(monthData._id, {
+      incomingInvoices: updatedInvoices,
+    });
+  },
+});
+
+export const updateInvoiceAmount = internalMutation({
+  args: {
+    monthKey: v.string(),
+    storageId: v.id("_storage"),
+    userId: v.id("users"),
+    amount: analysisResult,
+  },
+  handler: async (ctx, args) => {
+    const monthData = await ctx.db
+      .query("months")
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
+      )
+      .unique();
+
+    if (!monthData) {
+      return;
+    }
+
+    const updatedInvoices = monthData.incomingInvoices.map((invoice) => {
+      if (invoice.storageId === args.storageId) {
+        return {
+          ...invoice,
+          analysis: {
+            ...invoice.analysis,
+            amount: args.amount,
+          },
         };
       }
       return invoice;

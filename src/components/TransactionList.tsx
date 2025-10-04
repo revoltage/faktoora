@@ -1,12 +1,12 @@
 import { useQuery } from "convex/react";
 import { useState } from "react";
 
-import { api } from "../convex/_generated/api";
-import { TransactionDetailsModal } from "./components/TransactionDetailsModal";
-import { TransactionInvoiceBindingModal } from "./components/TransactionInvoiceBindingModal";
-import { Badge } from "./components/ui/badge";
-import { Button } from "./components/ui/button";
-import { getInvoiceHelperLinks } from "./lib/transactionHelperLinks";
+import { api } from "../../convex/_generated/api";
+import { TransactionDetailsModal } from "./TransactionDetailsModal";
+import { TransactionInvoiceBindingModal } from "./TransactionInvoiceBindingModal";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { getInvoiceHelperLinks } from "../lib/transactionHelperLinks";
 
 const cfg = {
   // Filtering constants

@@ -177,7 +177,7 @@ export const InvoiceList = ({
                 <div className="flex items-start gap-2 flex-1 min-w-0">
                   <div className="text-gray-400 mt-0.5">📄</div>
                   <div className="flex-1 min-w-0">
-                    {/* Main row: Sender + Date */}
+                    {/* Main row: Sender + Date + Amount */}
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm text-blue-600 font-medium truncate">
                         {invoice.name ?? invoice.fileName}
@@ -225,6 +225,29 @@ export const InvoiceList = ({
                         ) : invoice.analysis.date.lastUpdated === null ? (
                           <span className="text-yellow-600">
                             Analyzing date...
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">N/A</span>
+                        )}
+                      </span>
+                      <span className="text-xs font-medium text-green-700 whitespace-nowrap">
+                        {invoice.analysis.amount.error ? (
+                          <span
+                            className="text-red-600 cursor-pointer"
+                            onClick={() =>
+                              console.error(
+                                "💰 Amount Analysis Error:",
+                                invoice.analysis.amount.error
+                              )
+                            }
+                          >
+                            Amount Error
+                          </span>
+                        ) : invoice.analysis.amount.value ? (
+                          invoice.analysis.amount.value.replace('|', ' ')
+                        ) : invoice.analysis.amount.lastUpdated === null ? (
+                          <span className="text-yellow-600">
+                            Analyzing amount...
                           </span>
                         ) : (
                           <span className="text-gray-400">N/A</span>

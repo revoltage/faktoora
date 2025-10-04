@@ -8,6 +8,7 @@ const analysisResult = v.object({
   lastUpdated: v.union(v.number(), v.null()),
 });
 
+
 const applicationTables = {
   months: defineTable({
     userId: v.id("users"),
@@ -22,6 +23,7 @@ const applicationTables = {
           date: analysisResult,
           sender: analysisResult,
           parsedText: analysisResult,
+          amount: analysisResult,
           analysisBigError: v.union(v.string(), v.null()),
         }),
         parsing: v.object({}),

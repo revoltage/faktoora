@@ -99,7 +99,7 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
               <CardTitle className="text-sm font-medium">🔍 Analysis Status</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Text Parsing</span>
@@ -132,6 +132,18 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
                   {invoice.analysis.date.error && (
                     <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
                       {invoice.analysis.date.error}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Amount</span>
+                    {getStatusBadge(invoice.analysis, "amount")}
+                  </div>
+                  {invoice.analysis.amount.error && (
+                    <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                      {invoice.analysis.amount.error}
                     </p>
                   )}
                 </div>
@@ -204,6 +216,17 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
                   <span className="text-sm font-medium text-muted-foreground">Date:</span>
                   <p className="mt-1 text-sm">
                     {invoice.analysis.date.value ? formatDate(invoice.analysis.date.value) : (
+                      <span className="text-muted-foreground italic">Not available</span>
+                    )}
+                  </p>
+                </div>
+
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">Amount:</span>
+                  <p className="mt-1 text-sm font-medium text-green-700">
+                    {invoice.analysis.amount.value ? (
+                      invoice.analysis.amount.value.replace('|', ' ')
+                    ) : (
                       <span className="text-muted-foreground italic">Not available</span>
                     )}
                   </p>

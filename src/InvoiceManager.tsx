@@ -73,7 +73,7 @@ export function InvoiceManagerPage() {
         center={
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               className="h-7 px-2 text-[11px]"
               onClick={goToPreviousMonth}
@@ -84,7 +84,7 @@ export function InvoiceManagerPage() {
               {formatMonthDisplay(currentMonth)}
             </span>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               className="h-7 px-2 text-[11px]"
               onClick={goToNextMonth}

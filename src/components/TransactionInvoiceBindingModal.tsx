@@ -91,7 +91,7 @@ export function TransactionInvoiceBindingModal({
             </div>
             <div className="max-h-60 overflow-y-auto space-y-1">
               {/* "Nothing" option */}
-              <label className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+              <label className="flex items-center p-1 hover:bg-gray-50 rounded cursor-pointer">
                 <input
                   type="radio"
                   name="invoice"
@@ -100,16 +100,14 @@ export function TransactionInvoiceBindingModal({
                   onChange={() => setSelectedInvoiceId(null)}
                   className="mr-2"
                 />
-                <div className="flex-1">
-                  <div className="text-sm text-gray-600">🚫 No invoice</div>
-                </div>
+                <span className="text-sm text-gray-600">No invoice</span>
               </label>
 
               {/* Invoice options */}
               {invoices.map((invoice) => (
                 <label
                   key={invoice.storageId}
-                  className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
+                  className="flex items-center p-1 hover:bg-gray-50 rounded cursor-pointer"
                 >
                   <input
                     type="radio"
@@ -119,24 +117,17 @@ export function TransactionInvoiceBindingModal({
                     onChange={() => setSelectedInvoiceId(invoice.storageId)}
                     className="mr-2"
                   />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">
-                      📄 {invoice.name || invoice.fileName}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(invoice.uploadedAt).toLocaleDateString()}
-                    </div>
-                    {invoice.analysis.sender.value && (
-                      <div className="text-xs text-blue-600">
-                        From: {invoice.analysis.sender.value}
-                      </div>
+                  <span className="text-sm text-gray-900 truncate">
+                    {invoice.name || invoice.fileName}
+                  </span>
+                  <span className="text-xs text-gray-500 ml-auto">
+                    {new Date(invoice.uploadedAt).toLocaleDateString()}
+                    {invoice.analysis.amount.value && (
+                      <span className="font-bold text-gray-700 ml-1">
+                        {invoice.analysis.amount.value.replace('|', ' ')}
+                      </span>
                     )}
-                    {invoice.analysis.date.value && (
-                      <div className="text-xs text-green-600">
-                        Date: {invoice.analysis.date.value}
-                      </div>
-                    )}
-                  </div>
+                  </span>
                 </label>
               ))}
             </div>
