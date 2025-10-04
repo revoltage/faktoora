@@ -15,7 +15,7 @@ export function SignOutButton() {
     <Button
       variant="outline"
       size="sm"
-      className="h-7 px-2 text-[11px]"
+      className="h-7 px-2 text-[11px] shadow-none"
       onClick={() => void signOut()}
     >
       Sign out
