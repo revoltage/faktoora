@@ -51,18 +51,18 @@ export const EmailDraft = ({
             Email Draft
           </div>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-5 px-2 text-[10px] shadow-none"
+            className="h-5 px-2 text-[10px] gap-1"
             onClick={handleCopyToClipboard}
           >
-            <Copy className="h-3 w-3 mr-1" />
+            <Copy className="!h-2 !w-2" />
             Copy
           </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-3 pt-0">
-        <pre className="whitespace-pre-wrap text-xs text-muted-foreground bg-gray-50 p-3 rounded border font-mono">
+        <pre className="whitespace-pre-wrap text-[10px] text-muted-foreground bg-gray-50 p-3 rounded border font-[Arial, sans-serif] font-normal">
           {emailContent}
         </pre>
       </CardContent>
