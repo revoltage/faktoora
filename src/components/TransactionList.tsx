@@ -1,5 +1,6 @@
 import { useQuery } from "convex/react";
 import { useState } from "react";
+import { CheckCircle, AlertCircle } from "lucide-react";
 
 import { api } from "../../convex/_generated/api";
 import { TransactionDetailsModal } from "./TransactionDetailsModal";
@@ -275,7 +276,7 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                   variant="ghost"
                   size="sm"
                   onClick={(e) => handleBindingClick(transaction, e)}
-                  className={`h-6 w-6 p-0 ${
+                  className={`h-8 w-8 p-0 ${
                     transaction.boundInvoiceStorageId
                       ? "text-green-600 hover:text-green-700"
                       : "text-orange-500 hover:text-orange-600"
@@ -286,7 +287,11 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                       : "Bind to invoice"
                   }
                 >
-                  {transaction.boundInvoiceStorageId ? "✓" : "⚠"}
+                  {transaction.boundInvoiceStorageId ? (
+                    <CheckCircle className="h-5 w-5" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5" />
+                  )}
                 </Button>
               </div>
             </div>
