@@ -1,6 +1,5 @@
 import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { Toaster } from "sonner";
-import { Card, CardContent } from "./components/ui/card";
 
 import { api } from "../convex/_generated/api";
 import { InvoiceManager } from "./InvoiceManager";
@@ -20,8 +19,8 @@ function Content() {
 
   if (loggedInUser === undefined) {
     return (
-      <div className="flex justify-center items-center">
-        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-200 border-t-indigo-600"></div>
       </div>
     );
   }
@@ -32,14 +31,16 @@ function Content() {
         <InvoiceManager />
       </Authenticated>
       <Unauthenticated>
-        <div className="max-w-sm mx-auto">
-          <div className="text-center mb-4">
-            <h1 className="text-lg font-semibold text-primary mb-1 tracking-tight">
-              Invoice Manager
-            </h1>
-            <p className="text-xs text-secondary">Sign in to get started</p>
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <div className="w-full max-w-md">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                Invoice Manager
+              </h1>
+              <p className="text-slate-600 text-sm">Streamline your invoicing workflow</p>
+            </div>
+            <SignInForm />
           </div>
-          <SignInForm />
         </div>
       </Unauthenticated>
     </>
