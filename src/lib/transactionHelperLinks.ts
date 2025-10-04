@@ -48,7 +48,7 @@ const HELPER_LINKS = [
     links: [`https://mail.google.com/mail/u/${GOOGLE_USER_INDEX}/#search/stackblitz+invoice`],
   },
   {
-    keywords: ["google cloud"],
+    keywords: ["google cloud", "google*cloud"],
     links: [`https://mail.google.com/mail/u/${GOOGLE_USER_INDEX}/#search/google+cloud+invoice`],
   },
   {
