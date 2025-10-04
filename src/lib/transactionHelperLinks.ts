@@ -13,7 +13,7 @@ const HELPER_LINKS = [
   },
   {
     keywords: ["cursor", "anysphere"],
-    links: ["https://www.cursor.com/settings"],
+    links: ["https://cursor.com/dashboard?tab=billing"],
   },
   {
     keywords: ["t3 chat"],
