@@ -18,6 +18,7 @@ import type * as http from "../http.js";
 import type * as invoiceAnalysis from "../invoiceAnalysis.js";
 import type * as invoices from "../invoices.js";
 import type * as router from "../router.js";
+import type * as userSettings from "../userSettings.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   invoiceAnalysis: typeof invoiceAnalysis;
   invoices: typeof invoices;
   router: typeof router;
+  userSettings: typeof userSettings;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
