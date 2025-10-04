@@ -1,13 +1,13 @@
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { api } from "../convex/_generated/api";
-import { Header } from "./components/Header";
-import { InvoiceDetailsModal } from "./components/InvoiceDetailsModal";
-import { InvoiceList } from "./components/InvoiceList";
-import { StatementsSection } from "./components/StatementsSection";
-import { EmailDraft } from "./components/EmailDraft";
-import { Button } from "./components/ui/button";
+import { api } from "../../convex/_generated/api";
+import { Header } from "../components/Header";
+import { InvoiceDetailsModal } from "../components/InvoiceDetailsModal";
+import { InvoiceList } from "../components/InvoiceList";
+import { StatementsSection } from "../components/StatementsSection";
+import { EmailDraft } from "../components/EmailDraft";
+import { Button } from "../components/ui/button";
 
 interface UploadingInvoice {
   fileName: string;

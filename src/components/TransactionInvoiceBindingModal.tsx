@@ -2,8 +2,15 @@ import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 
 import { api } from "../../convex/_generated/api";
-import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Id } from "../../convex/_generated/dataModel";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface TransactionInvoiceBindingModalProps {
   isOpen: boolean;
@@ -32,7 +39,7 @@ export function TransactionInvoiceBindingModal({
       await bindTransaction({
         monthKey,
         transactionId: transaction.id,
-        invoiceStorageId: selectedInvoiceId,
+        invoiceStorageId: selectedInvoiceId as Id<"_storage">,
       });
       onClose();
     } catch (error) {
@@ -124,7 +131,7 @@ export function TransactionInvoiceBindingModal({
                     {new Date(invoice.uploadedAt).toLocaleDateString()}
                     {invoice.analysis.amount.value && (
                       <span className="font-bold text-gray-700 ml-1">
-                        {invoice.analysis.amount.value.replace('|', ' ')}
+                        {invoice.analysis.amount.value.replace("|", " ")}
                       </span>
                     )}
                   </span>
@@ -138,7 +145,7 @@ export function TransactionInvoiceBindingModal({
             <Button variant="outline" onClick={handleClose} size="sm">
               Cancel
             </Button>
-            <Button onClick={handleSave} size="sm">
+            <Button onClick={() => void handleSave()} size="sm">
               Save Binding
             </Button>
           </div>

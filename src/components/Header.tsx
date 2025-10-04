@@ -1,8 +1,8 @@
 import { ReactNode, useState } from "react";
 
-import { SignOutButton } from "@/SignOutButton";
-import { SettingsModal } from "./SettingsModal";
-import { Button } from "./ui/button";
+import { SettingsModal } from "@/components/SettingsModal";
+import { SignOutButton } from "@/components/SignOutButton";
+import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
   center?: ReactNode;
@@ -19,7 +19,7 @@ export function Header({ center, className = "" }: HeaderProps) {
       >
         <div className="flex items-center">
           <h2 className="text-sm font-semibold text-primary tracking-tight">
-            Invoice Manager
+            Facktoora
           </h2>
         </div>
         <div className="flex items-center">{center}</div>

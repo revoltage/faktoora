@@ -1,12 +1,10 @@
 import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { TransactionList } from "./TransactionList";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Separator } from "./ui/separator";
+
+import { api } from "../../convex/_generated/api";
+
+import { TransactionList } from "@/components/TransactionList";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +15,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "./ui/alert-dialog";
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 interface StatementsSectionProps {
   monthKey: string;
@@ -135,10 +137,14 @@ export const StatementsSection = ({
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>🗑️ Delete All Statements</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      🗑️ Delete All Statements
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete all statement files for {formatMonthDisplay(monthKey)}? 
-                      This will also remove all transaction data and invoice bindings. This action cannot be undone.
+                      Are you sure you want to delete all statement files for{" "}
+                      {formatMonthDisplay(monthKey)}? This will also remove all
+                      transaction data and invoice bindings. This action cannot
+                      be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

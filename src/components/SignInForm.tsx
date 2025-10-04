@@ -1,25 +1,20 @@
-"use client";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState } from "react";
 import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "./components/ui/card";
-import { Label } from "./components/ui/label";
-import { Input } from "./components/ui/input";
-import { Button } from "./components/ui/button";
-import { Separator } from "./components/ui/separator";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "./components/ui/tabs";
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
@@ -33,7 +28,9 @@ export function SignInForm() {
           {flow === "signIn" ? "Sign in" : "Create account"}
         </CardTitle>
         <CardDescription className="text-xs text-muted-foreground text-center">
-          {flow === "signIn" ? "Use your email and password" : "Start by entering your email and password"}
+          {flow === "signIn"
+            ? "Use your email and password"
+            : "Start by entering your email and password"}
         </CardDescription>
       </CardHeader>
 
@@ -44,8 +41,12 @@ export function SignInForm() {
           className="w-full"
         >
           <TabsList className="grid grid-cols-2 h-9 mb-4">
-            <TabsTrigger value="signIn" className="text-xs">Sign in</TabsTrigger>
-            <TabsTrigger value="signUp" className="text-xs">Sign up</TabsTrigger>
+            <TabsTrigger value="signIn" className="text-xs">
+              Sign in
+            </TabsTrigger>
+            <TabsTrigger value="signUp" className="text-xs">
+              Sign up
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value={flow} className="mt-0">
@@ -68,7 +69,9 @@ export function SignInForm() {
               }}
             >
               <div className="space-y-1">
-                <Label htmlFor="email" className="text-xs">Email</Label>
+                <Label htmlFor="email" className="text-xs">
+                  Email
+                </Label>
                 <Input
                   id="email"
                   name="email"
@@ -79,7 +82,9 @@ export function SignInForm() {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="password" className="text-xs">Password</Label>
+                <Label htmlFor="password" className="text-xs">
+                  Password
+                </Label>
                 <Input
                   id="password"
                   name="password"
@@ -96,8 +101,10 @@ export function SignInForm() {
               >
                 {submitting ? (
                   <span>Processing…</span>
+                ) : flow === "signIn" ? (
+                  "Sign in"
                 ) : (
-                  flow === "signIn" ? "Sign in" : "Create account"
+                  "Create account"
                 )}
               </Button>
             </form>

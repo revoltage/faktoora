@@ -1,9 +1,10 @@
 import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { useState, useRef } from "react";
+import { CheckIcon, XIcon } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+
+import { api } from "../../convex/_generated/api";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,9 +15,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "./ui/alert-dialog";
-import { CheckIcon, XIcon } from "lucide-react";
-import { checkVatIdInText } from "../lib/vatIdChecker";
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { checkVatIdInText } from "@/lib/vatIdChecker";
 
 interface UploadingInvoice {
   fileName: string;
@@ -293,7 +295,7 @@ export const InvoiceList = ({
                             <span className="text-gray-400">N/A</span>
                           )}
                         </span>
-                        
+
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
                           {invoice.analysis.date.error ? (
                             <span
@@ -342,7 +344,7 @@ export const InvoiceList = ({
                         )}
                       </span>
                     </div>
-                    
+
                     {/* Tiny row: Filename + Uploaded at + Parse status on left, VAT Status on right */}
                     <div className="flex items-center justify-between text-[9px] text-muted-foreground">
                       <div className="flex items-center gap-2 flex-1 min-w-0">

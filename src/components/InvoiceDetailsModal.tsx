@@ -1,10 +1,16 @@
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Input } from "./ui/input";
 import { useState } from "react";
 import { toast } from "sonner";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface InvoiceDetailsModalProps {
   invoice: any;
@@ -15,7 +21,14 @@ interface InvoiceDetailsModalProps {
   monthKey: string;
 }
 
-export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpdateName, monthKey }: InvoiceDetailsModalProps) => {
+export const InvoiceDetailsModal = ({
+  invoice,
+  isOpen,
+  onClose,
+  onDelete,
+  onUpdateName,
+  monthKey,
+}: InvoiceDetailsModalProps) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(invoice?.name || "");
 
@@ -23,27 +36,43 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
 
   const formatDate = (dateStr: string | number) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", { 
-      year: "numeric", 
-      month: "long", 
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
       day: "numeric",
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
     });
   };
 
   const getStatusBadge = (analysis: any, field: string) => {
     const fieldData = analysis[field];
     if (fieldData.error) {
-      return <Badge variant="destructive" className="text-xs">Error</Badge>;
+      return (
+        <Badge variant="destructive" className="text-xs">
+          Error
+        </Badge>
+      );
     }
     if (fieldData.lastUpdated === null) {
-      return <Badge variant="secondary" className="text-xs">Processing</Badge>;
+      return (
+        <Badge variant="secondary" className="text-xs">
+          Processing
+        </Badge>
+      );
     }
     if (fieldData.value) {
-      return <Badge variant="default" className="text-xs bg-green-600">Complete</Badge>;
+      return (
+        <Badge variant="default" className="text-xs bg-green-600">
+          Complete
+        </Badge>
+      );
     }
-    return <Badge variant="outline" className="text-xs">N/A</Badge>;
+    return (
+      <Badge variant="outline" className="text-xs">
+        N/A
+      </Badge>
+    );
   };
 
   const handleSaveName = async () => {
@@ -72,21 +101,27 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
             </Badge>
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* File Information */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">📁 File Information</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                📁 File Information
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="font-medium text-muted-foreground">File Name:</span>
+                  <span className="font-medium text-muted-foreground">
+                    File Name:
+                  </span>
                   <p className="mt-1 break-all">{invoice.fileName}</p>
                 </div>
                 <div>
-                  <span className="font-medium text-muted-foreground">Uploaded:</span>
+                  <span className="font-medium text-muted-foreground">
+                    Uploaded:
+                  </span>
                   <p className="mt-1">{formatDate(invoice.uploadedAt)}</p>
                 </div>
               </div>
@@ -96,7 +131,9 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
           {/* Analysis Status */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">🔍 Analysis Status</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                🔍 Analysis Status
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -111,7 +148,7 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
                     </p>
                   )}
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Sender</span>
@@ -123,7 +160,7 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
                     </p>
                   )}
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Date</span>
@@ -148,11 +185,15 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
                   )}
                 </div>
               </div>
-              
+
               {invoice.analysis.analysisBigError && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-sm font-medium text-red-800">Analysis Error:</p>
-                  <p className="text-xs text-red-600 mt-1">{invoice.analysis.analysisBigError}</p>
+                  <p className="text-sm font-medium text-red-800">
+                    Analysis Error:
+                  </p>
+                  <p className="text-xs text-red-600 mt-1">
+                    {invoice.analysis.analysisBigError}
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -161,12 +202,16 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
           {/* Extracted Information */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">📋 Extracted Information</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                📋 Extracted Information
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">Name:</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Name:
+                  </span>
                   <div className="mt-1 flex items-center gap-2">
                     {isEditingName ? (
                       <>
@@ -176,10 +221,14 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
                           className="text-sm"
                           autoFocus
                         />
-                        <Button size="sm" onClick={handleSaveName}>
+                        <Button size="sm" onClick={() => void handleSaveName()}>
                           Save
                         </Button>
-                        <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCancelEdit}
+                        >
                           Cancel
                         </Button>
                       </>
@@ -187,12 +236,14 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
                       <>
                         <p className="text-sm">
                           {invoice.name || (
-                            <span className="text-muted-foreground italic">Not available</span>
+                            <span className="text-muted-foreground italic">
+                              Not available
+                            </span>
                           )}
                         </p>
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           onClick={() => setIsEditingName(true)}
                           className="text-xs"
                         >
@@ -202,42 +253,60 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
                     )}
                   </div>
                 </div>
-                
+
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">Sender:</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Sender:
+                  </span>
                   <p className="mt-1 text-sm">
                     {invoice.analysis.sender.value || (
-                      <span className="text-muted-foreground italic">Not available</span>
-                    )}
-                  </p>
-                </div>
-                
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">Date:</span>
-                  <p className="mt-1 text-sm">
-                    {invoice.analysis.date.value ? formatDate(invoice.analysis.date.value) : (
-                      <span className="text-muted-foreground italic">Not available</span>
+                      <span className="text-muted-foreground italic">
+                        Not available
+                      </span>
                     )}
                   </p>
                 </div>
 
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">Amount:</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Date:
+                  </span>
+                  <p className="mt-1 text-sm">
+                    {invoice.analysis.date.value ? (
+                      formatDate(invoice.analysis.date.value)
+                    ) : (
+                      <span className="text-muted-foreground italic">
+                        Not available
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Amount:
+                  </span>
                   <p className="mt-1 text-sm font-medium text-green-700">
                     {invoice.analysis.amount.value ? (
-                      invoice.analysis.amount.value.replace('|', ' ')
+                      invoice.analysis.amount.value.replace("|", " ")
                     ) : (
-                      <span className="text-muted-foreground italic">Not available</span>
+                      <span className="text-muted-foreground italic">
+                        Not available
+                      </span>
                     )}
                   </p>
                 </div>
               </div>
-              
+
               {invoice.analysis.parsedText.value && (
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">Parsed Text:</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Parsed Text:
+                  </span>
                   <div className="mt-2 p-3 bg-gray-50 rounded-md max-h-40 overflow-y-auto">
-                    <p className="text-xs whitespace-pre-wrap">{invoice.analysis.parsedText.value}</p>
+                    <p className="text-xs whitespace-pre-wrap">
+                      {invoice.analysis.parsedText.value}
+                    </p>
                   </div>
                 </div>
               )}
@@ -249,8 +318,8 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete, onUpda
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={() => {
                 void onDelete(invoice.storageId);
               }}

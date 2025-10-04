@@ -1,7 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
 import { Copy, Mail } from "lucide-react";
 import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface EmailDraftProps {
   invoices: any[];
@@ -9,9 +10,13 @@ interface EmailDraftProps {
   monthKey: string;
 }
 
-export const EmailDraft = ({ invoices, statements, monthKey }: EmailDraftProps) => {
+export const EmailDraft = ({
+  invoices,
+  statements,
+  monthKey,
+}: EmailDraftProps) => {
   // Check if there are PDF statements or invoices
-  const hasPdfStatements = statements.some(stmt => stmt.fileType === 'pdf');
+  const hasPdfStatements = statements.some((stmt) => stmt.fileType === "pdf");
   const hasInvoices = invoices.length > 0;
 
   // Only render if there are PDF statements or invoices
@@ -27,7 +32,8 @@ export const EmailDraft = ({ invoices, statements, monthKey }: EmailDraftProps) 
   }
 
   const handleCopyToClipboard = () => {
-    navigator.clipboard.writeText(emailContent)
+    navigator.clipboard
+      .writeText(emailContent)
       .then(() => {
         toast.success("📋 Email draft copied to clipboard");
       })
@@ -66,8 +72,8 @@ export const EmailDraft = ({ invoices, statements, monthKey }: EmailDraftProps) 
 
 // Import the utility function
 function createEmailDraft(
-  invoices: any[], 
-  statements: any[], 
+  invoices: any[],
+  statements: any[],
   monthKey: string
 ) {
   if (invoices.length === 0 && statements.length === 0) {
@@ -75,24 +81,34 @@ function createEmailDraft(
   }
 
   // Parse month from monthKey (format: "YYYY-MM")
-  const [year, month] = monthKey.split('-');
-  
+  const [year, month] = monthKey.split("-");
+
   // Use Bulgarian locale for month name
   const monthNames = [
-    'януари', 'февруари', 'март', 'април', 'май', 'юни',
-    'юли', 'август', 'септември', 'октомври', 'ноември', 'декември'
+    "януари",
+    "февруари",
+    "март",
+    "април",
+    "май",
+    "юни",
+    "юли",
+    "август",
+    "септември",
+    "октомври",
+    "ноември",
+    "декември",
   ];
-  
+
   const monthName = monthNames[parseInt(month) - 1];
   const yearStr = year;
 
   // Check for PDF statements specifically
-  const hasPdfStatements = statements.some(stmt => stmt.fileType === 'pdf');
+  const hasPdfStatements = statements.some((stmt) => stmt.fileType === "pdf");
   const hasInvoices = invoices.length > 0;
 
   // Build the email content
-  let emailContent = 'Здравей,\n\n';
-  
+  let emailContent = "Здравей,\n\n";
+
   if (hasPdfStatements && hasInvoices) {
     emailContent += `Изпращам ти извлеченията от Revolut и фактурите за месец ${monthName} ${yearStr}:\n\n`;
   } else if (hasPdfStatements) {
@@ -103,16 +119,14 @@ function createEmailDraft(
 
   // Add invoices list
   if (hasInvoices) {
-    invoices.forEach(invoice => {
+    invoices.forEach((invoice) => {
       // Priority: invoice name -> sender -> filename
-      const displayName = invoice.name || 
-                         invoice.analysis?.sender?.value || 
-                         invoice.fileName;
+      const displayName =
+        invoice.name || invoice.analysis?.sender?.value || invoice.fileName;
       emailContent += `• ${displayName}\n`;
     });
-    emailContent += '\n';
+    emailContent += "\n";
   }
-
 
   return emailContent;
 }

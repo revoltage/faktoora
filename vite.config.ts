@@ -15,17 +15,7 @@ export default defineConfig(({ mode }) => ({
           transform(code: string, id: string) {
             if (id.includes("main.tsx")) {
               return {
-                code: `${code}
-
-/* Added by Vite plugin inject-chef-dev */
-window.addEventListener('message', async (message) => {
-  if (message.source !== window.parent) return;
-  if (message.data.type !== 'chefPreviewRequest') return;
-
-  const worker = await import('https://chef.convex.dev/scripts/worker.bundled.mjs');
-  await worker.respondToMessage(message);
-});
-            `,
+                code: `${code}  ${viewChefPluginCodeSuffix}`,
                 map: null,
               };
             }
@@ -38,6 +28,19 @@ window.addEventListener('message', async (message) => {
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@/convex": path.resolve(__dirname, "./convex"),
     },
   },
 }));
+
+const viewChefPluginCodeSuffix = `
+
+/* Added by Vite plugin inject-chef-dev */
+window.addEventListener('message', async (message) => {
+  if (message.source !== window.parent) return;
+  if (message.data.type !== 'chefPreviewRequest') return;
+
+  const worker = await import('https://chef.convex.dev/scripts/worker.bundled.mjs');
+  await worker.respondToMessage(message);
+});
+`;

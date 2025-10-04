@@ -1,13 +1,14 @@
 import { useQuery } from "convex/react";
+import { AlertCircle, CheckCircle } from "lucide-react";
 import { useState } from "react";
-import { CheckCircle, AlertCircle } from "lucide-react";
 
 import { api } from "../../convex/_generated/api";
-import { TransactionDetailsModal } from "./TransactionDetailsModal";
-import { TransactionInvoiceBindingModal } from "./TransactionInvoiceBindingModal";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { getInvoiceHelperLinks } from "../lib/transactionHelperLinks";
+
+import { TransactionDetailsModal } from "@/components/TransactionDetailsModal";
+import { TransactionInvoiceBindingModal } from "@/components/TransactionInvoiceBindingModal";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { getInvoiceHelperLinks } from "@/lib/transactionHelperLinks";
 
 const cfg = {
   // Filtering constants
@@ -218,9 +219,10 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                     <span className="font-medium text-foreground truncate text-xs">
                       {transaction.description || "No description"}
                     </span>
-                    <Badge 
-                    variant="outline"
-                    className="uppercase text-[8px] text-gray-500 px-1 py-0 shadow-none">
+                    <Badge
+                      variant="outline"
+                      className="uppercase text-[8px] text-gray-500 px-1 py-0 shadow-none"
+                    >
                       {transaction.type}
                     </Badge>
                   </div>
@@ -270,7 +272,7 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                       </div>
                     )}
                 </div>
-                
+
                 {/* Binding button */}
                 <Button
                   variant="ghost"
