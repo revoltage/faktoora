@@ -145,28 +145,27 @@ export const InvoiceList = ({
 
   const renderVatIdStatus = (invoice: any) => {
     if (!invoice.analysis.parsedText.value) {
+      return <span className="text-[9px] text-gray-400">No parsed text</span>;
+    }
+
+    const vatCheck = checkVatIdInText(
+      invoice.analysis.parsedText.value,
+      userSettings?.vatId
+    );
+
+    if (vatCheck.found) {
       return (
-        <span className="text-[9px] text-gray-400">
-          No parsed text
+        <span className="text-[9px] text-green-600 font-base">
+          <CheckIcon className="inline-block  w-3 h-3 pb-1" /> VAT OK
         </span>
       );
     }
 
-    const vatCheck = checkVatIdInText(invoice.analysis.parsedText.value, userSettings?.vatId);
-    
-    if (vatCheck.found) {
-      return (
-        <span className="text-[9px] text-green-600 font-base">
-          VAT <CheckIcon className="inline-block  w-3 h-3 pb-1" />
-        </span>
-      );
-    } else {
-      return (
-        <span className="text-[9px] text-white bg-red-600 px-2 py-0 rounded font-bold border">
-          VAT MISSING
-        </span>
-      );
-    }
+    return (
+      <span className="text-[9px] text-white bg-red-500 px-2 py-0 rounded font-bold border border-red-600">
+        VAT MISSING
+      </span>
+    );
   };
 
   return (
@@ -197,8 +196,9 @@ export const InvoiceList = ({
                   <AlertDialogHeader>
                     <AlertDialogTitle>🗑️ Delete All Invoices</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete all invoice files for {formatMonthDisplay(monthKey)}? 
-                      This action cannot be undone.
+                      Are you sure you want to delete all invoice files for{" "}
+                      {formatMonthDisplay(monthKey)}? This action cannot be
+                      undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -262,60 +262,62 @@ export const InvoiceList = ({
                 <div className="flex items-start gap-2 flex-1 min-w-0">
                   <div className="text-gray-400 mt-0.5">📄</div>
                   <div className="flex-1 min-w-0">
-                    {/* Main row: Sender + Date + Amount */}
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm text-blue-600 font-medium truncate">
-                        {invoice.name ?? invoice.fileName}
-                      </span>
+                    {/* Main row: Sender + Date on left, Amount on right */}
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="text-sm text-blue-600 font-medium truncate">
+                          {invoice.name ?? invoice.fileName}
+                        </span>
 
-                      <span className="text-xs font-medium">
-                        {invoice.analysis.sender.error ? (
-                          <span
-                            className="text-red-600 cursor-pointer"
-                            onClick={() =>
-                              console.error(
-                                "🔍 Sender Analysis Error:",
-                                invoice.analysis.sender.error
-                              )
-                            }
-                          >
-                            Sender Error
-                          </span>
-                        ) : invoice.analysis.sender.value ? (
-                          <CheckIcon className="inline-block w-3 text-green-600" />
-                        ) : // invoice.analysis.sender.value
-                        invoice.analysis.sender.lastUpdated === null ? (
-                          <span className="text-yellow-600">
-                            Analyzing sender...
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">N/A</span>
-                        )}
-                      </span>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {invoice.analysis.date.error ? (
-                          <span
-                            className="text-red-600 cursor-pointer"
-                            onClick={() =>
-                              console.error(
-                                "🔍 Date Analysis Error:",
-                                invoice.analysis.date.error
-                              )
-                            }
-                          >
-                            Date Error
-                          </span>
-                        ) : invoice.analysis.date.value ? (
-                          formatInvoiceDate(invoice.analysis.date.value)
-                        ) : invoice.analysis.date.lastUpdated === null ? (
-                          <span className="text-yellow-600">
-                            Analyzing date...
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">N/A</span>
-                        )}
-                      </span>
-                      <span className="text-xs font-medium text-green-700 whitespace-nowrap">
+                        <span className="text-xs font-medium">
+                          {invoice.analysis.sender.error ? (
+                            <span
+                              className="text-red-600 cursor-pointer"
+                              onClick={() =>
+                                console.error(
+                                  "🔍 Sender Analysis Error:",
+                                  invoice.analysis.sender.error
+                                )
+                              }
+                            >
+                              Sender Error
+                            </span>
+                          ) : invoice.analysis.sender.value ? (
+                            <CheckIcon className="inline-block w-3 text-green-600" />
+                          ) : // invoice.analysis.sender.value
+                          invoice.analysis.sender.lastUpdated === null ? (
+                            <span className="text-yellow-600">
+                              Analyzing sender...
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">N/A</span>
+                          )}
+                        </span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {invoice.analysis.date.error ? (
+                            <span
+                              className="text-red-600 cursor-pointer"
+                              onClick={() =>
+                                console.error(
+                                  "🔍 Date Analysis Error:",
+                                  invoice.analysis.date.error
+                                )
+                              }
+                            >
+                              Date Error
+                            </span>
+                          ) : invoice.analysis.date.value ? (
+                            formatInvoiceDate(invoice.analysis.date.value)
+                          ) : invoice.analysis.date.lastUpdated === null ? (
+                            <span className="text-yellow-600">
+                              Analyzing date...
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">N/A</span>
+                          )}
+                        </span>
+                      </div>
+                      <span className="text-xs font-medium text-green-700 whitespace-nowrap ml-2">
                         {invoice.analysis.amount.error ? (
                           <span
                             className="text-red-600 cursor-pointer"
@@ -329,7 +331,7 @@ export const InvoiceList = ({
                             Amount Error
                           </span>
                         ) : invoice.analysis.amount.value ? (
-                          invoice.analysis.amount.value.replace('|', ' ')
+                          invoice.analysis.amount.value.replace("|", " ")
                         ) : invoice.analysis.amount.lastUpdated === null ? (
                           <span className="text-yellow-600">
                             Analyzing amount...
@@ -339,35 +341,35 @@ export const InvoiceList = ({
                         )}
                       </span>
                     </div>
-                    {/* Tiny row: Filename + Uploaded at + Parse status + VAT Status */}
-                    <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
-                      <span className="truncate">{invoice.fileName}</span>
-                      <span>•</span>
-                      <span>
-                        {formatInvoiceDate(invoice.uploadedAt)}
-                      </span>
-                      <span>•</span>
-                      <span>
-                        {invoice.analysis.parsedText.error ? (
-                          <span
-                            className="text-red-600 cursor-pointer"
-                            onClick={() =>
-                              console.error(
-                                "📝 Parsing Error:",
-                                invoice.analysis.parsedText.error
-                              )
-                            }
-                          >
-                            Parse error
-                          </span>
-                        ) : invoice.analysis.parsedText.lastUpdated === null ? (
-                          <span className="text-yellow-600">Parsing</span>
-                        ) : (
-                          <span className="text-green-600">Parsed</span>
-                        )}
-                      </span>
-                      <span>•</span>
-                      {renderVatIdStatus(invoice)}
+                    {/* Tiny row: Filename + Uploaded at + Parse status on left, VAT Status on right */}
+                    <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="truncate">{invoice.fileName}</span>
+                        <span>•</span>
+                        <span>{formatInvoiceDate(invoice.uploadedAt)}</span>
+                        <span>•</span>
+                        <span>
+                          {invoice.analysis.parsedText.error ? (
+                            <span
+                              className="text-red-600 cursor-pointer"
+                              onClick={() =>
+                                console.error(
+                                  "📝 Parsing Error:",
+                                  invoice.analysis.parsedText.error
+                                )
+                              }
+                            >
+                              Parse error
+                            </span>
+                          ) : invoice.analysis.parsedText.lastUpdated ===
+                            null ? (
+                            <span className="text-yellow-600">Parsing</span>
+                          ) : (
+                            <span className="text-green-600">Parsed</span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="ml-2">{renderVatIdStatus(invoice)}</div>
                     </div>
                   </div>
                 </div>
