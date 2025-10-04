@@ -6,6 +6,7 @@ import { Header } from "./components/Header";
 import { InvoiceDetailsModal } from "./components/InvoiceDetailsModal";
 import { InvoiceList } from "./components/InvoiceList";
 import { StatementsSection } from "./components/StatementsSection";
+import { EmailDraft } from "./components/EmailDraft";
 import { Button } from "./components/ui/button";
 
 interface UploadingInvoice {
@@ -171,6 +172,12 @@ export function InvoiceManagerPageContent({
   return (
     <main className="flex-1 p-4 max-w-3xl mx-auto">
       <div className="mt-4">
+        <EmailDraft
+          invoices={monthData.incomingInvoices}
+          statements={monthData.statements}
+          monthKey={currentMonth}
+        />
+
         <StatementsSection
           monthKey={currentMonth}
           statements={monthData.statements}
