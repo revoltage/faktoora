@@ -19,14 +19,7 @@ export const TransactionDetailsModal = ({
   const formatDate = (dateStr: string) => {
     if (!dateStr) return 'Not available';
     try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-US", { 
-        year: "numeric", 
-        month: "long", 
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
+      return new Date(dateStr).toISOString().split('T')[0];
     } catch {
       return dateStr;
     }

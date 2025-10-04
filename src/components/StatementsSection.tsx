@@ -14,7 +14,11 @@ interface StatementsSectionProps {
   generateUploadUrl: any;
 }
 
-export const StatementsSection = ({ monthKey, statements, generateUploadUrl }: StatementsSectionProps) => {
+export const StatementsSection = ({
+  monthKey,
+  statements,
+  generateUploadUrl,
+}: StatementsSectionProps) => {
   const addStatement = useMutation(api.invoices.addStatement);
   const deleteStatement = useMutation(api.invoices.deleteStatement);
   const statementInputRef = useRef<HTMLInputElement>(null);
@@ -29,7 +33,7 @@ export const StatementsSection = ({ monthKey, statements, generateUploadUrl }: S
         body: file,
       });
       const { storageId } = await result.json();
-      
+
       // If it's a CSV file, read the content and process it
       if (fileType === "csv") {
         const csvContent = await file.text();
@@ -106,7 +110,9 @@ export const StatementsSection = ({ monthKey, statements, generateUploadUrl }: S
                 input.accept = ".csv";
                 input.multiple = true;
                 input.onchange = (e) => {
-                  const files = Array.from((e.target as HTMLInputElement).files || []);
+                  const files = Array.from(
+                    (e.target as HTMLInputElement).files || []
+                  );
                   for (const file of files) {
                     void handleUploadStatement(file, "csv");
                   }
@@ -136,34 +142,36 @@ export const StatementsSection = ({ monthKey, statements, generateUploadUrl }: S
           }}
         />
         {statements.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No statements uploaded yet</p>
+          <p className="text-xs text-muted-foreground">
+            No statements uploaded yet
+          </p>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-0">
             {statements.map((statement) => (
               <div
                 key={statement.storageId}
-                className="flex items-center justify-between p-2 rounded-md border bg-card"
+                className="flex items-center justify-between py-0.5 border-t border-gray-100"
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Badge className="uppercase bg-blue-600 text-white border-blue-600">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Badge className="uppercase text-[7px] bg-gray-200 text-gray-600 border-gray-200 px-1 py-0">
                     {statement.fileType}
                   </Badge>
                   <a
                     href={statement.url || "#"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline truncate"
+                    className="text-blue-600 hover:underline truncate text-[9px]"
                   >
                     {statement.fileName}
                   </a>
-                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                    {new Date(statement.uploadedAt).toLocaleDateString()}
+                  <span className="text-[8px] text-muted-foreground whitespace-nowrap">
+                    {new Date(statement.uploadedAt).toISOString().split("T")[0]}
                   </span>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 px-2 text-[11px] text-red-600 hover:text-red-700"
+                  className="h-5 px-1.5 text-[8px] text-red-600 hover:text-red-700"
                   onClick={() => {
                     void deleteStatement({
                       monthKey,
@@ -178,11 +186,12 @@ export const StatementsSection = ({ monthKey, statements, generateUploadUrl }: S
           </div>
         )}
 
-        <Separator className="my-3" />
-
-        <div>
-          <TransactionList monthKey={monthKey} />
-        </div>
+        {statements.length > 0 && (
+          <div>
+            <Separator className="mt-1 mb-2" />
+            <TransactionList monthKey={monthKey} />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
