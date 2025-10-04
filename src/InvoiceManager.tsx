@@ -7,6 +7,7 @@ import { Button } from "./components/ui/button";
 import { Badge } from "./components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
 import { Separator } from "./components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/ui/tooltip";
 
 interface UploadingInvoice {
   fileName: string;
@@ -162,6 +163,11 @@ export function InvoiceManager() {
     const [year, month] = monthKey.split("-");
     const date = new Date(parseInt(year), parseInt(month) - 1);
     return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
+  };
+
+  const formatInvoiceDate = (dateStr: string | number) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", { day: "numeric", month: "short" });
   };
 
   const InvoiceSkeleton = ({ fileName }: { fileName: string }) => (
@@ -360,74 +366,70 @@ export function InvoiceManager() {
               {monthData.incomingInvoices.map((invoice) => (
                 <div
                   key={invoice.storageId}
-                  className="flex items-center justify-between p-2 rounded-md border bg-card"
+                  className="flex items-start justify-between p-2 rounded-md border bg-card"
                 >
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <a
-                      href={invoice.url || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline font-medium truncate"
-                    >
-                      {invoice.fileName}
-                    </a>
-                    <div className="flex items-center gap-1.5 text-[10px]">
-                      {invoice.analysis.sender.error ? (
-                        <Badge
-                          variant="destructive"
-                          className="cursor-pointer"
-                          onClick={() => console.error("🔍 Sender Analysis Error:", invoice.analysis.sender.error)}
-                        >
-                          Sender Error
-                        </Badge>
-                      ) : invoice.analysis.sender.value ? (
-                        <Badge className="bg-green-100 text-green-800 border-green-200">
-                          {invoice.analysis.sender.value}
-                        </Badge>
-                      ) : invoice.analysis.sender.lastUpdated === null ? (
-                        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Analyzing sender...</Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-gray-600 border-gray-300">N/A</Badge>
-                      )}
-                      {invoice.analysis.date.error ? (
-                        <Badge
-                          variant="destructive"
-                          className="cursor-pointer"
-                          onClick={() => console.error("🔍 Date Analysis Error:", invoice.analysis.date.error)}
-                        >
-                          Date Error
-                        </Badge>
-                      ) : invoice.analysis.date.value ? (
-                        <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                          {invoice.analysis.date.value}
-                        </Badge>
-                      ) : invoice.analysis.date.lastUpdated === null ? (
-                        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Analyzing date...</Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-gray-600 border-gray-300">N/A</Badge>
-                      )}
-                      {invoice.analysis.parsedText.error && (
-                        <Badge
-                          variant="destructive"
-                          className="cursor-pointer"
-                          onClick={() => console.error("📝 Parsing Error:", invoice.analysis.parsedText.error)}
-                        >
-                          Parse Error
-                        </Badge>
-                      )}
-                      {invoice.analysis.analysisBigError && (
-                        <Badge
-                          variant="destructive"
-                          className="cursor-pointer"
-                          onClick={() => console.error("🚨 Analysis Big Error:", invoice.analysis.analysisBigError)}
-                        >
-                          Analysis Error
-                        </Badge>
-                      )}
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    <div className="text-gray-400 mt-0.5">
+                      📄
                     </div>
-                    <span className="text-[10px] text-muted-foreground ml-auto whitespace-nowrap">
-                      Uploaded: {new Date(invoice.uploadedAt).toLocaleDateString()}
-                    </span>
+                    <div className="flex-1 min-w-0">
+                      {/* Main row: Sender + Date */}
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm text-blue-600 font-medium truncate">
+                          {invoice.analysis.sender.error ? (
+                            <span className="text-red-600 cursor-pointer" onClick={() => console.error("🔍 Sender Analysis Error:", invoice.analysis.sender.error)}>
+                              Sender Error
+                            </span>
+                          ) : invoice.analysis.sender.value ? (
+                            invoice.analysis.sender.value
+                          ) : invoice.analysis.sender.lastUpdated === null ? (
+                            <span className="text-yellow-600">Analyzing sender...</span>
+                          ) : (
+                            <span className="text-gray-400">N/A</span>
+                          )}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {invoice.analysis.date.error ? (
+                            <span className="text-red-600 cursor-pointer" onClick={() => console.error("🔍 Date Analysis Error:", invoice.analysis.date.error)}>
+                              Date Error
+                            </span>
+                          ) : invoice.analysis.date.value ? (
+                            formatInvoiceDate(invoice.analysis.date.value)
+                          ) : invoice.analysis.date.lastUpdated === null ? (
+                            <span className="text-yellow-600">Analyzing date...</span>
+                          ) : (
+                            <span className="text-gray-400">N/A</span>
+                          )}
+                        </span>
+                      </div>
+                      {/* Tiny row: Filename + Uploaded at + Parse status */}
+                      <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
+                        <span className="truncate">{invoice.fileName}</span>
+                        <span>•</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help">{formatInvoiceDate(invoice.uploadedAt)}</span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>File uploaded at {new Date(invoice.uploadedAt).toLocaleString()}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <span>•</span>
+                        <span>
+                          {invoice.analysis.parsedText.error ? (
+                            <span className="text-red-600 cursor-pointer" onClick={() => console.error("📝 Parsing Error:", invoice.analysis.parsedText.error)}>
+                              Parse error
+                            </span>
+                          ) : invoice.analysis.parsedText.lastUpdated === null ? (
+                            <span className="text-yellow-600">Parsing</span>
+                          ) : (
+                            <span className="text-green-600">Parsed</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <Button
                     variant="ghost"
