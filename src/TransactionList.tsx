@@ -1,5 +1,7 @@
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { Badge } from "./components/ui/badge";
+import { ScrollArea } from "./components/ui/scroll-area";
 
 interface TransactionListProps {
   monthKey: string;
@@ -10,8 +12,8 @@ export function TransactionList({ monthKey }: TransactionListProps) {
 
   if (!transactions) {
     return (
-      <div className="flex justify-center items-center py-4">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+      <div className="flex justify-center items-center py-2">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -66,66 +68,63 @@ export function TransactionList({ monthKey }: TransactionListProps) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-semibold text-foreground tracking-tight">
           📊 Transactions ({transactions.length})
         </h3>
-        <div className="text-sm text-gray-500">
-          Merged from CSV statements
+        <div className="text-[11px] text-muted-foreground">Merged from CSV statements</div>
+      </div>
+
+      <ScrollArea className="h-72 w-full">
+        <div className="space-y-1.5 pr-2">
+          {transactions.map((transaction, index) => (
+            <div
+              key={`${transaction.id}-${index}`}
+              className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/30 transition-colors"
+            >
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="text-base flex-shrink-0">
+                  {getTransactionIcon(transaction.type)}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
+                    <span className="font-medium text-foreground truncate text-sm">
+                      {transaction.description || 'No description'}
+                    </span>
+                    <Badge className="uppercase text-[10px] bg-purple-600 text-white border-purple-600">
+                      {transaction.type}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground min-w-0">
+                    <span className="whitespace-nowrap">📅 {formatDate(transaction.dateCompleted || transaction.dateStarted)}</span>
+                    {transaction.payer && (
+                      <span className="truncate">👤 {transaction.payer}</span>
+                    )}
+                    {transaction.sourceFile && (
+                      <span className="truncate">📁 {transaction.sourceFile}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col items-end text-right flex-shrink-0 ml-3">
+                <div className={`font-semibold text-sm ${getAmountColor(transaction.amount)}`}>
+                  {formatAmount(transaction.amount, transaction.paymentCurrency)}
+                </div>
+                {transaction.origAmount && transaction.origAmount !== transaction.amount && (
+                  <div className="text-[10px] text-muted-foreground">
+                    {formatAmount(transaction.origAmount, transaction.origCurrency)}
+                  </div>
+                )}
+                {transaction.balance && (
+                  <div className="text-[10px] text-muted-foreground">
+                    Balance: {formatAmount(transaction.balance, transaction.paymentCurrency)}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
-      
-      <div className="space-y-2 max-h-96 overflow-y-auto">
-        {transactions.map((transaction, index) => (
-          <div
-            key={`${transaction.id}-${index}`}
-            className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200 hover:bg-gray-100 transition-colors"
-          >
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <span className="text-lg flex-shrink-0">
-                {getTransactionIcon(transaction.type)}
-              </span>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-gray-900 truncate">
-                    {transaction.description || 'No description'}
-                  </span>
-                  <span className="text-xs px-2 py-1 bg-gray-200 text-gray-600 rounded uppercase">
-                    {transaction.type}
-                  </span>
-                </div>
-                
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  <span>📅 {formatDate(transaction.dateCompleted || transaction.dateStarted)}</span>
-                  {transaction.payer && (
-                    <span className="truncate">👤 {transaction.payer}</span>
-                  )}
-                  {transaction.sourceFile && (
-                    <span className="truncate">📁 {transaction.sourceFile}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex flex-col items-end text-right flex-shrink-0 ml-4">
-              <div className={`font-semibold ${getAmountColor(transaction.amount)}`}>
-                {formatAmount(transaction.amount, transaction.paymentCurrency)}
-              </div>
-              {transaction.origAmount && transaction.origAmount !== transaction.amount && (
-                <div className="text-xs text-gray-500">
-                  {formatAmount(transaction.origAmount, transaction.origCurrency)}
-                </div>
-              )}
-              {transaction.balance && (
-                <div className="text-xs text-gray-400">
-                  Balance: {formatAmount(transaction.balance, transaction.paymentCurrency)}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+      </ScrollArea>
     </div>
   );
 }

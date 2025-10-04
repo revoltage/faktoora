@@ -3,6 +3,10 @@ import { api } from "../convex/_generated/api";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { TransactionList } from "./TransactionList";
+import { Button } from "./components/ui/button";
+import { Badge } from "./components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
+import { Separator } from "./components/ui/separator";
 
 interface UploadingInvoice {
   fileName: string;
@@ -184,262 +188,269 @@ export function InvoiceManager() {
   if (!monthData) {
     return (
       <div className="flex justify-center items-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <button
+    <div className="max-w-3xl mx-auto">
+      <div className="flex items-center justify-between mb-3">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 px-2 text-[11px]"
           onClick={goToPreviousMonth}
-          className="px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
         >
           ← Previous
-        </button>
-        <h1 className="text-3xl font-bold text-primary">
+        </Button>
+        <h1 className="text-base font-semibold text-primary tracking-tight">
           {formatMonthDisplay(currentMonth)}
         </h1>
-        <button
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 px-2 text-[11px]"
           onClick={goToNextMonth}
-          className="px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
         >
           Next →
-        </button>
+        </Button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Monthly Statements</h2>
-        <div className="flex gap-4 mb-4">
-          <button
-            onClick={() => statementInputRef.current?.click()}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          >
-            Upload Statement PDF
-          </button>
-          <button
-            onClick={() => {
-              const input = document.createElement("input");
-              input.type = "file";
-              input.accept = ".csv";
-              input.multiple = true;
-              input.onchange = (e) => {
-                const files = Array.from((e.target as HTMLInputElement).files || []);
-                for (const file of files) {
-                  void handleUploadStatement(file, "csv");
-                }
-              };
-              input.click();
-            }}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-          >
-            Upload Statement CSV(s)
-          </button>
-          <input
-            ref={statementInputRef}
-            type="file"
-            accept=".pdf"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                void handleUploadStatement(file, "pdf");
-              }
-              e.target.value = "";
-            }}
-          />
-        </div>
-        {monthData.statements.length === 0 ? (
-          <p className="text-gray-500 text-sm">No statements uploaded yet</p>
-        ) : (
-          <div className="space-y-2">
-            {monthData.statements.map((statement) => (
-              <div
-                key={statement.storageId}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-semibold px-2 py-1 bg-gray-200 rounded uppercase">
-                    {statement.fileType}
-                  </span>
-                  <a
-                    href={statement.url || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    {statement.fileName}
-                  </a>
-                  <span className="text-xs text-gray-500">
-                    {new Date(statement.uploadedAt).toLocaleDateString()}
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    void deleteStatement({
-                      monthKey: currentMonth,
-                      storageId: statement.storageId,
-                    });
-                  }}
-                  className="text-red-600 hover:text-red-800 text-sm"
-                >
-                  Delete
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        
-        {/* Transaction List */}
-        <div className="mt-6">
-          <TransactionList monthKey={currentMonth} />
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold mb-4">Incoming Invoices</h2>
-        <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          className={`border-2 border-dashed rounded-lg p-8 mb-4 transition-colors ${
-            isDragging
-              ? "border-blue-500 bg-blue-50"
-              : "border-gray-300 bg-gray-50"
-          }`}
-        >
-          <div className="text-center">
-            <p className="text-gray-600 mb-2">
-              Drag & drop invoice PDFs here, or
-            </p>
-            <button
-              onClick={() => invoiceInputRef.current?.click()}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+      <Card className="mb-3 border border-gray-200 shadow-sm">
+        <CardHeader className="p-3 pb-2">
+          <CardTitle className="text-sm font-semibold tracking-tight">Monthly Statements</CardTitle>
+        </CardHeader>
+        <CardContent className="p-3 pt-0">
+          <div className="flex gap-2 mb-3">
+            <Button
+              size="sm"
+              className="h-7 px-2 text-[11px]"
+              onClick={() => statementInputRef.current?.click()}
             >
-              Browse Files
-            </button>
+              Upload PDF
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              className="h-7 px-2 text-[11px] bg-green-600 hover:bg-green-700"
+              onClick={() => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = ".csv";
+                input.multiple = true;
+                input.onchange = (e) => {
+                  const files = Array.from((e.target as HTMLInputElement).files || []);
+                  for (const file of files) {
+                    void handleUploadStatement(file, "csv");
+                  }
+                };
+                input.click();
+              }}
+            >
+              Upload CSV(s)
+            </Button>
             <input
-              ref={invoiceInputRef}
+              ref={statementInputRef}
               type="file"
               accept=".pdf"
-              multiple
               className="hidden"
               onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                for (const file of files) {
-                  void handleUploadInvoice(file);
+                const file = e.target.files?.[0];
+                if (file) {
+                  void handleUploadStatement(file, "pdf");
                 }
                 e.target.value = "";
               }}
             />
           </div>
-        </div>
-        {monthData.incomingInvoices.length === 0 && uploadingInvoices.length === 0 ? (
-          <p className="text-gray-500 text-sm">No invoices uploaded yet</p>
-        ) : (
-          <div className="space-y-2">
-            {/* Show uploading skeletons first */}
-            {uploadingInvoices.map((uploadingInvoice) => (
-              <InvoiceSkeleton key={uploadingInvoice.uploadId} fileName={uploadingInvoice.fileName} />
-            ))}
-            {/* Show uploaded invoices */}
-            {monthData.incomingInvoices.map((invoice) => (
-              <div
-                key={invoice.storageId}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200"
-              >
-                <div className="flex items-center gap-3 flex-1">
-                  <a
-                    href={invoice.url || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline font-medium"
-                  >
-                    {invoice.fileName}
-                  </a>
-                  <div className="flex items-center gap-2 text-xs">
-                    {invoice.analysis.sender.error ? (
-                      <span 
-                        className="px-2 py-1 bg-red-100 text-red-800 rounded cursor-pointer hover:bg-red-200 transition-colors"
-                        onClick={() => console.error("🔍 Sender Analysis Error:", invoice.analysis.sender.error)}
-                        title="Click to see error details in console"
-                      >
-                        Sender Error
-                      </span>
-                    ) : invoice.analysis.sender.value ? (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
-                        {invoice.analysis.sender.value}
-                      </span>
-                    ) : invoice.analysis.sender.lastUpdated === null ? (
-                      <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded animate-pulse">
-                        Analyzing sender...
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded">
-                        N/A
-                      </span>
-                    )}
-                    {invoice.analysis.date.error ? (
-                      <span 
-                        className="px-2 py-1 bg-red-100 text-red-800 rounded cursor-pointer hover:bg-red-200 transition-colors"
-                        onClick={() => console.error("🔍 Date Analysis Error:", invoice.analysis.date.error)}
-                        title="Click to see error details in console"
-                      >
-                        Date Error
-                      </span>
-                    ) : invoice.analysis.date.value ? (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                        {invoice.analysis.date.value}
-                      </span>
-                    ) : invoice.analysis.date.lastUpdated === null ? (
-                      <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded animate-pulse">
-                        Analyzing date...
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded">
-                        N/A
-                      </span>
-                    )}
-                    {invoice.analysis.parsedText.error && (
-                      <span 
-                        className="px-2 py-1 bg-red-100 text-red-800 rounded cursor-pointer hover:bg-red-200 transition-colors"
-                        onClick={() => console.error("📝 Parsing Error:", invoice.analysis.parsedText.error)}
-                        title="Click to see error details in console"
-                      >
-                        Parse Error
-                      </span>
-                    )}
-                    {invoice.analysis.analysisBigError && (
-                      <span 
-                        className="px-2 py-1 bg-red-100 text-red-800 rounded cursor-pointer hover:bg-red-200 transition-colors"
-                        onClick={() => console.error("🚨 Analysis Big Error:", invoice.analysis.analysisBigError)}
-                        title="Click to see error details in console"
-                      >
-                        Analysis Error
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-500 ml-auto">
-                    Uploaded: {new Date(invoice.uploadedAt).toLocaleDateString()}
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    void deleteIncomingInvoice({
-                      monthKey: currentMonth,
-                      storageId: invoice.storageId,
-                    });
-                  }}
-                  className="text-red-600 hover:text-red-800 text-sm ml-4"
+          {monthData.statements.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No statements uploaded yet</p>
+          ) : (
+            <div className="space-y-1.5">
+              {monthData.statements.map((statement) => (
+                <div
+                  key={statement.storageId}
+                  className="flex items-center justify-between p-2 rounded-md border bg-card"
                 >
-                  Delete
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Badge className="uppercase bg-blue-600 text-white border-blue-600">
+                      {statement.fileType}
+                    </Badge>
+                    <a
+                      href={statement.url || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline truncate"
+                    >
+                      {statement.fileName}
+                    </a>
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                      {new Date(statement.uploadedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-[11px] text-red-600 hover:text-red-700"
+                    onClick={() => {
+                      void deleteStatement({
+                        monthKey: currentMonth,
+                        storageId: statement.storageId,
+                      });
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Separator className="my-3" />
+
+          <div>
+            <TransactionList monthKey={currentMonth} />
           </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="p-3 pb-2">
+          <CardTitle className="text-sm font-semibold tracking-tight">Incoming Invoices</CardTitle>
+        </CardHeader>
+        <CardContent className="p-3 pt-0">
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            className={`border-2 border-dashed rounded-md p-4 mb-3 transition-colors ${
+              isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-gray-50"
+            }`}
+          >
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground mb-2">Drag & drop invoice PDFs, or</p>
+              <Button
+                size="sm"
+                className="h-7 px-2 text-[11px]"
+                onClick={() => invoiceInputRef.current?.click()}
+              >
+                Browse Files
+              </Button>
+              <input
+                ref={invoiceInputRef}
+                type="file"
+                accept=".pdf"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  for (const file of files) {
+                    void handleUploadInvoice(file);
+                  }
+                  e.target.value = "";
+                }}
+              />
+            </div>
+          </div>
+          {monthData.incomingInvoices.length === 0 && uploadingInvoices.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No invoices uploaded yet</p>
+          ) : (
+            <div className="space-y-1.5">
+              {uploadingInvoices.map((uploadingInvoice) => (
+                <InvoiceSkeleton key={uploadingInvoice.uploadId} fileName={uploadingInvoice.fileName} />
+              ))}
+              {monthData.incomingInvoices.map((invoice) => (
+                <div
+                  key={invoice.storageId}
+                  className="flex items-center justify-between p-2 rounded-md border bg-card"
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <a
+                      href={invoice.url || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline font-medium truncate"
+                    >
+                      {invoice.fileName}
+                    </a>
+                    <div className="flex items-center gap-1.5 text-[10px]">
+                      {invoice.analysis.sender.error ? (
+                        <Badge
+                          variant="destructive"
+                          className="cursor-pointer"
+                          onClick={() => console.error("🔍 Sender Analysis Error:", invoice.analysis.sender.error)}
+                        >
+                          Sender Error
+                        </Badge>
+                      ) : invoice.analysis.sender.value ? (
+                        <Badge className="bg-green-100 text-green-800 border-green-200">
+                          {invoice.analysis.sender.value}
+                        </Badge>
+                      ) : invoice.analysis.sender.lastUpdated === null ? (
+                        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Analyzing sender...</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-gray-600 border-gray-300">N/A</Badge>
+                      )}
+                      {invoice.analysis.date.error ? (
+                        <Badge
+                          variant="destructive"
+                          className="cursor-pointer"
+                          onClick={() => console.error("🔍 Date Analysis Error:", invoice.analysis.date.error)}
+                        >
+                          Date Error
+                        </Badge>
+                      ) : invoice.analysis.date.value ? (
+                        <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                          {invoice.analysis.date.value}
+                        </Badge>
+                      ) : invoice.analysis.date.lastUpdated === null ? (
+                        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Analyzing date...</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-gray-600 border-gray-300">N/A</Badge>
+                      )}
+                      {invoice.analysis.parsedText.error && (
+                        <Badge
+                          variant="destructive"
+                          className="cursor-pointer"
+                          onClick={() => console.error("📝 Parsing Error:", invoice.analysis.parsedText.error)}
+                        >
+                          Parse Error
+                        </Badge>
+                      )}
+                      {invoice.analysis.analysisBigError && (
+                        <Badge
+                          variant="destructive"
+                          className="cursor-pointer"
+                          onClick={() => console.error("🚨 Analysis Big Error:", invoice.analysis.analysisBigError)}
+                        >
+                          Analysis Error
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground ml-auto whitespace-nowrap">
+                      Uploaded: {new Date(invoice.uploadedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-[11px] text-red-600 hover:text-red-700 ml-2"
+                    onClick={() => {
+                      void deleteIncomingInvoice({
+                        monthKey: currentMonth,
+                        storageId: invoice.storageId,
+                      });
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
