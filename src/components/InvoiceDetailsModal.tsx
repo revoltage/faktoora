@@ -131,6 +131,15 @@ export const InvoiceDetailsModal = ({ invoice, isOpen, onClose, onDelete }: Invo
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
+                  <span className="text-sm font-medium text-muted-foreground">Name:</span>
+                  <p className="mt-1 text-sm">
+                    {invoice.name || (
+                      <span className="text-muted-foreground italic">Not available</span>
+                    )}
+                  </p>
+                </div>
+                
+                <div>
                   <span className="text-sm font-medium text-muted-foreground">Sender:</span>
                   <p className="mt-1 text-sm">
                     {invoice.analysis.sender.value || (

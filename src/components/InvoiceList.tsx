@@ -4,7 +4,13 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
+import { CheckIcon } from "lucide-react";
 
 interface UploadingInvoice {
   fileName: string;
@@ -36,22 +42,20 @@ const InvoiceSkeleton = ({ fileName }: { fileName: string }) => (
           🔄 Processing...
         </span>
       </div>
-      <span className="text-xs text-gray-500 ml-auto">
-        Just now
-      </span>
+      <span className="text-xs text-gray-500 ml-auto">Just now</span>
     </div>
   </div>
 );
 
-export const InvoiceList = ({ 
-  monthKey, 
-  incomingInvoices, 
-  uploadingInvoices, 
-  generateUploadUrl, 
-  addIncomingInvoice, 
-  deleteIncomingInvoice, 
+export const InvoiceList = ({
+  monthKey,
+  incomingInvoices,
+  uploadingInvoices,
+  generateUploadUrl,
+  addIncomingInvoice,
+  deleteIncomingInvoice,
   onInvoiceClick,
-  onUploadingStateChange
+  onUploadingStateChange,
 }: InvoiceListProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
@@ -83,7 +87,9 @@ export const InvoiceList = ({
       toast.error("Failed to upload invoice");
     } finally {
       // Remove from uploading state
-      onUploadingStateChange(uploadingInvoices.filter(inv => inv.uploadId !== uploadId));
+      onUploadingStateChange(
+        uploadingInvoices.filter((inv) => inv.uploadId !== uploadId)
+      );
     }
   };
 
@@ -113,7 +119,7 @@ export const InvoiceList = ({
   };
 
   return (
-    <Card 
+    <Card
       className={`border border-gray-200 shadow-sm transition-colors ${
         isDragging ? "border-blue-500 bg-blue-50" : ""
       }`}
@@ -133,7 +139,9 @@ export const InvoiceList = ({
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className={`p-3 pt-0 transition-opacity ${isDragging ? "opacity-50" : ""}`}>
+      <CardContent
+        className={`p-3 pt-0 transition-opacity ${isDragging ? "opacity-50" : ""}`}
+      >
         <input
           ref={invoiceInputRef}
           type="file"
@@ -149,11 +157,16 @@ export const InvoiceList = ({
           }}
         />
         {incomingInvoices.length === 0 && uploadingInvoices.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No invoices uploaded yet</p>
+          <p className="text-xs text-muted-foreground">
+            No invoices uploaded yet
+          </p>
         ) : (
           <div className="space-y-1.5">
             {uploadingInvoices.map((uploadingInvoice) => (
-              <InvoiceSkeleton key={uploadingInvoice.uploadId} fileName={uploadingInvoice.fileName} />
+              <InvoiceSkeleton
+                key={uploadingInvoice.uploadId}
+                fileName={uploadingInvoice.fileName}
+              />
             ))}
             {incomingInvoices.map((invoice) => (
               <div
@@ -162,34 +175,57 @@ export const InvoiceList = ({
                 onClick={() => onInvoiceClick(invoice)}
               >
                 <div className="flex items-start gap-2 flex-1 min-w-0">
-                  <div className="text-gray-400 mt-0.5">
-                    📄
-                  </div>
+                  <div className="text-gray-400 mt-0.5">📄</div>
                   <div className="flex-1 min-w-0">
                     {/* Main row: Sender + Date */}
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm text-blue-600 font-medium truncate">
+                        {invoice.name ?? invoice.fileName}
+                      </span>
+
+                      <span className="text-xs font-medium">
                         {invoice.analysis.sender.error ? (
-                          <span className="text-red-600 cursor-pointer" onClick={() => console.error("🔍 Sender Analysis Error:", invoice.analysis.sender.error)}>
+                          <span
+                            className="text-red-600 cursor-pointer"
+                            onClick={() =>
+                              console.error(
+                                "🔍 Sender Analysis Error:",
+                                invoice.analysis.sender.error
+                              )
+                            }
+                          >
                             Sender Error
                           </span>
                         ) : invoice.analysis.sender.value ? (
-                          invoice.analysis.sender.value
-                        ) : invoice.analysis.sender.lastUpdated === null ? (
-                          <span className="text-yellow-600">Analyzing sender...</span>
+                          <CheckIcon className="inline-block w-3 text-green-600" />
+                        ) : // invoice.analysis.sender.value
+                        invoice.analysis.sender.lastUpdated === null ? (
+                          <span className="text-yellow-600">
+                            Analyzing sender...
+                          </span>
                         ) : (
                           <span className="text-gray-400">N/A</span>
                         )}
                       </span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
                         {invoice.analysis.date.error ? (
-                          <span className="text-red-600 cursor-pointer" onClick={() => console.error("🔍 Date Analysis Error:", invoice.analysis.date.error)}>
+                          <span
+                            className="text-red-600 cursor-pointer"
+                            onClick={() =>
+                              console.error(
+                                "🔍 Date Analysis Error:",
+                                invoice.analysis.date.error
+                              )
+                            }
+                          >
                             Date Error
                           </span>
                         ) : invoice.analysis.date.value ? (
                           formatInvoiceDate(invoice.analysis.date.value)
                         ) : invoice.analysis.date.lastUpdated === null ? (
-                          <span className="text-yellow-600">Analyzing date...</span>
+                          <span className="text-yellow-600">
+                            Analyzing date...
+                          </span>
                         ) : (
                           <span className="text-gray-400">N/A</span>
                         )}
@@ -199,20 +235,21 @@ export const InvoiceList = ({
                     <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
                       <span className="truncate">{invoice.fileName}</span>
                       <span>•</span>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="cursor-help">{formatInvoiceDate(invoice.uploadedAt)}</span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>File uploaded at {new Date(invoice.uploadedAt).toLocaleString()}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <span>
+                        {formatInvoiceDate(invoice.uploadedAt)}
+                      </span>
                       <span>•</span>
                       <span>
                         {invoice.analysis.parsedText.error ? (
-                          <span className="text-red-600 cursor-pointer" onClick={() => console.error("📝 Parsing Error:", invoice.analysis.parsedText.error)}>
+                          <span
+                            className="text-red-600 cursor-pointer"
+                            onClick={() =>
+                              console.error(
+                                "📝 Parsing Error:",
+                                invoice.analysis.parsedText.error
+                              )
+                            }
+                          >
                             Parse error
                           </span>
                         ) : invoice.analysis.parsedText.lastUpdated === null ? (

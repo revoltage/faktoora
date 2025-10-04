@@ -16,6 +16,7 @@ const applicationTables = {
       v.object({
         storageId: v.id("_storage"),
         fileName: v.string(),
+        name: v.optional(v.string()),
         uploadedAt: v.number(),
         analysis: v.object({
           date: analysisResult,

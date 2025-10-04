@@ -9,6 +9,39 @@ const analysisResult = v.object({
   lastUpdated: v.union(v.number(), v.null()),
 });
 
+// Helper function to get filename without extension
+function getFileNameWithoutExtension(fileName: string): string {
+  const lastDotIndex = fileName.lastIndexOf('.');
+  if (lastDotIndex === -1) {
+    return fileName;
+  }
+  return fileName.substring(0, lastDotIndex);
+}
+
+// Migration function to add name field to existing invoices
+export const migrateInvoiceNames = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const allMonths = await ctx.db.query("months").collect();
+    
+    for (const month of allMonths) {
+      const updatedInvoices = month.incomingInvoices.map((invoice) => {
+        if (!invoice.name) {
+          return {
+            ...invoice,
+            name: getFileNameWithoutExtension(invoice.fileName),
+          };
+        }
+        return invoice;
+      });
+      
+      await ctx.db.patch(month._id, {
+        incomingInvoices: updatedInvoices,
+      });
+    }
+  },
+});
+
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
@@ -92,6 +125,7 @@ export const addIncomingInvoice = mutation({
     const newInvoice = {
       storageId: args.storageId,
       fileName: args.fileName,
+      name: getFileNameWithoutExtension(args.fileName),
       uploadedAt: Date.now(),
       analysis: {
         date: {
@@ -347,6 +381,7 @@ export const updateInvoiceSender = internalMutation({
       if (invoice.storageId === args.storageId) {
         return {
           ...invoice,
+          name: args.sender.value || invoice.name, // Update name to sender if available, otherwise keep existing name
           analysis: {
             ...invoice.analysis,
             sender: args.sender,
