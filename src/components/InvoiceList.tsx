@@ -1,15 +1,9 @@
-import { useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +15,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, XIcon } from "lucide-react";
+import { checkVatIdInText } from "../lib/vatIdChecker";
 
 interface UploadingInvoice {
   fileName: string;
@@ -72,6 +67,7 @@ export const InvoiceList = ({
 }: InvoiceListProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
+  const userSettings = useQuery(api.userSettings.getUserSettings);
 
   const formatMonthDisplay = (monthKey: string) => {
     const [year, month] = monthKey.split("-");
@@ -147,6 +143,32 @@ export const InvoiceList = ({
     return date.toLocaleDateString("en-US", { day: "numeric", month: "short" });
   };
 
+  const renderVatIdStatus = (invoice: any) => {
+    if (!invoice.analysis.parsedText.value) {
+      return (
+        <span className="text-[9px] text-gray-400">
+          No parsed text
+        </span>
+      );
+    }
+
+    const vatCheck = checkVatIdInText(invoice.analysis.parsedText.value, userSettings?.vatId);
+    
+    if (vatCheck.found) {
+      return (
+        <span className="text-[9px] text-green-600 font-base">
+          VAT <CheckIcon className="inline-block  w-3 h-3 pb-1" />
+        </span>
+      );
+    } else {
+      return (
+        <span className="text-[9px] text-white bg-red-600 px-2 py-0 rounded font-bold border">
+          VAT MISSING
+        </span>
+      );
+    }
+  };
+
   return (
     <Card
       className={`border border-gray-200 shadow-sm transition-colors ${
@@ -182,7 +204,7 @@ export const InvoiceList = ({
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={handleDeleteAllInvoices}
+                      onClick={() => void handleDeleteAllInvoices()}
                       className="bg-red-600 hover:bg-red-700"
                     >
                       Delete All
@@ -317,7 +339,7 @@ export const InvoiceList = ({
                         )}
                       </span>
                     </div>
-                    {/* Tiny row: Filename + Uploaded at + Parse status */}
+                    {/* Tiny row: Filename + Uploaded at + Parse status + VAT Status */}
                     <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
                       <span className="truncate">{invoice.fileName}</span>
                       <span>•</span>
@@ -344,6 +366,8 @@ export const InvoiceList = ({
                           <span className="text-green-600">Parsed</span>
                         )}
                       </span>
+                      <span>•</span>
+                      {renderVatIdStatus(invoice)}
                     </div>
                   </div>
                 </div>
@@ -359,7 +383,7 @@ export const InvoiceList = ({
                     });
                   }}
                 >
-                  Delete
+                  <XIcon className="inline-block w-2.5 h-2.5" />
                 </Button>
               </div>
             ))}
