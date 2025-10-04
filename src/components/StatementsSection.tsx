@@ -7,22 +7,51 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Separator } from "./ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./ui/alert-dialog";
 
 interface StatementsSectionProps {
   monthKey: string;
   statements: any[];
   generateUploadUrl: any;
+  deleteAllStatements?: any;
 }
 
 export const StatementsSection = ({
   monthKey,
   statements,
   generateUploadUrl,
+  deleteAllStatements,
 }: StatementsSectionProps) => {
   const addStatement = useMutation(api.invoices.addStatement);
   const deleteStatement = useMutation(api.invoices.deleteStatement);
   const statementInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  const formatMonthDisplay = (monthKey: string) => {
+    const [year, month] = monthKey.split("-");
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
+  };
+
+  const handleDeleteAllStatements = async () => {
+    if (!deleteAllStatements) return;
+    try {
+      await deleteAllStatements({ monthKey });
+      toast.success("🗑️ All statements deleted successfully");
+    } catch {
+      toast.error("Failed to delete all statements");
+    }
+  };
 
   const handleUploadStatement = async (file: File, fileType: "pdf" | "csv") => {
     try {
@@ -93,17 +122,49 @@ export const StatementsSection = ({
         <CardTitle className="text-sm font-semibold tracking-tight flex items-center justify-between">
           Monthly Statements
           <div className="flex gap-2">
+            {deleteAllStatements && statements.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-5 px-2 text-[10px] shadow-none"
+                  >
+                    Delete All
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>🗑️ Delete All Statements</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete all statement files for {formatMonthDisplay(monthKey)}? 
+                      This will also remove all transaction data and invoice bindings. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAllStatements}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Delete All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             <Button
+              variant="outline"
               size="sm"
-              className="h-5 px-2 text-[10px]"
+              className="h-5 px-2 text-[10px] shadow-none"
               onClick={() => statementInputRef.current?.click()}
             >
-              Upload PDF
+              + Upload PDF(s)
             </Button>
             <Button
-              variant="default"
+              variant="outline"
               size="sm"
-              className="h-5 px-2 text-[10px] bg-green-600 hover:bg-green-700"
+              className="h-5 px-2 text-[10px] shadow-none"
               onClick={() => {
                 const input = document.createElement("input");
                 input.type = "file";
@@ -120,7 +181,7 @@ export const StatementsSection = ({
                 input.click();
               }}
             >
-              Upload CSV(s)
+              + Upload CSV(s)
             </Button>
           </div>
         </CardTitle>

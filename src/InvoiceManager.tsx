@@ -114,6 +114,8 @@ export function InvoiceManagerPageContent({
   const addIncomingInvoice = useMutation(api.invoices.addIncomingInvoice);
   const deleteIncomingInvoice = useMutation(api.invoices.deleteIncomingInvoice);
   const updateInvoiceName = useMutation(api.invoices.updateInvoiceName);
+  const deleteAllStatements = useMutation(api.invoices.deleteAllStatements);
+  const deleteAllInvoices = useMutation(api.invoices.deleteAllInvoices);
 
   const [uploadingInvoices, setUploadingInvoices] = useState<
     UploadingInvoice[]
@@ -157,6 +159,7 @@ export function InvoiceManagerPageContent({
     }
   };
 
+
   if (!monthData) {
     return (
       <main className="flex justify-center items-center mt-16">
@@ -172,6 +175,7 @@ export function InvoiceManagerPageContent({
           monthKey={currentMonth}
           statements={monthData.statements}
           generateUploadUrl={generateUploadUrl}
+          deleteAllStatements={deleteAllStatements}
         />
 
         <InvoiceList
@@ -183,6 +187,7 @@ export function InvoiceManagerPageContent({
           deleteIncomingInvoice={deleteIncomingInvoice}
           onInvoiceClick={openInvoiceModal}
           onUploadingStateChange={setUploadingInvoices}
+          deleteAllInvoices={deleteAllInvoices}
         />
       </div>
 

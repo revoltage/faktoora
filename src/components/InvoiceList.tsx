@@ -10,6 +10,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./ui/alert-dialog";
 import { CheckIcon } from "lucide-react";
 
 interface UploadingInvoice {
@@ -26,6 +37,7 @@ interface InvoiceListProps {
   deleteIncomingInvoice: any;
   onInvoiceClick: (invoice: any) => void;
   onUploadingStateChange: (invoices: UploadingInvoice[]) => void;
+  deleteAllInvoices?: any;
 }
 
 const InvoiceSkeleton = ({ fileName }: { fileName: string }) => (
@@ -56,9 +68,26 @@ export const InvoiceList = ({
   deleteIncomingInvoice,
   onInvoiceClick,
   onUploadingStateChange,
+  deleteAllInvoices,
 }: InvoiceListProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
+
+  const formatMonthDisplay = (monthKey: string) => {
+    const [year, month] = monthKey.split("-");
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
+  };
+
+  const handleDeleteAllInvoices = async () => {
+    if (!deleteAllInvoices) return;
+    try {
+      await deleteAllInvoices({ monthKey });
+      toast.success("🗑️ All invoices deleted successfully");
+    } catch {
+      toast.error("Failed to delete all invoices");
+    }
+  };
 
   const handleUploadInvoice = async (file: File) => {
     const uploadId = `upload-${Date.now()}-${Math.random()}`;
@@ -130,13 +159,47 @@ export const InvoiceList = ({
       <CardHeader className="p-3 pb-2">
         <CardTitle className="text-sm font-semibold tracking-tight flex items-center justify-between">
           Incoming Invoices
-          <Button
-            size="sm"
-            className="h-5 px-2 text-[10px]"
-            onClick={() => invoiceInputRef.current?.click()}
-          >
-            + Upload Invoice
-          </Button>
+          <div className="flex gap-2">
+            {deleteAllInvoices && incomingInvoices.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-5 px-2 text-[10px] shadow-none"
+                  >
+                    Delete All
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>🗑️ Delete All Invoices</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete all invoice files for {formatMonthDisplay(monthKey)}? 
+                      This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAllInvoices}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Delete All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-5 px-2 text-[10px] shadow-none"
+              onClick={() => invoiceInputRef.current?.click()}
+            >
+              + Upload Invoice(s)
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent

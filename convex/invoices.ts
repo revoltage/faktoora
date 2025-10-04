@@ -694,6 +694,73 @@ export const getMergedTransactions = query({
   },
 });
 
+export const deleteAllStatements = mutation({
+  args: {
+    monthKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const monthData = await ctx.db
+      .query("months")
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", userId).eq("monthKey", args.monthKey)
+      )
+      .unique();
+
+    if (!monthData) {
+      return;
+    }
+
+    // Delete all statement files from storage
+    for (const statement of monthData.statements) {
+      await ctx.storage.delete(statement.storageId);
+    }
+
+    // Clear statements array and transaction bindings
+    await ctx.db.patch(monthData._id, {
+      statements: [],
+      transactionInvoiceBindings: [],
+    });
+  },
+});
+
+export const deleteAllInvoices = mutation({
+  args: {
+    monthKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const monthData = await ctx.db
+      .query("months")
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", userId).eq("monthKey", args.monthKey)
+      )
+      .unique();
+
+    if (!monthData) {
+      return;
+    }
+
+    // Delete all invoice files from storage
+    for (const invoice of monthData.incomingInvoices) {
+      await ctx.storage.delete(invoice.storageId);
+    }
+
+    // Clear incoming invoices array
+    await ctx.db.patch(monthData._id, {
+      incomingInvoices: [],
+    });
+  },
+});
+
 export const bindTransactionToInvoice = mutation({
   args: {
     monthKey: v.string(),
