@@ -158,6 +158,7 @@ export const addIncomingInvoice = mutation({
         monthKey: args.monthKey,
         incomingInvoices: [newInvoice],
         statements: [],
+        transactionInvoiceBindings: [],
       });
     }
 
@@ -214,6 +215,7 @@ export const addStatement = mutation({
         monthKey: args.monthKey,
         incomingInvoices: [],
         statements: [newStatement],
+        transactionInvoiceBindings: [],
       });
     }
   },
@@ -611,6 +613,12 @@ export const getMergedTransactions = query({
       return [];
     }
 
+    // Create a map of transaction bindings
+    const bindingMap = new Map<string, string | null>();
+    for (const binding of monthData.transactionInvoiceBindings || []) {
+      bindingMap.set(binding.transactionId, binding.invoiceStorageId);
+    }
+
     // Collect all transactions from CSV statements
     const allTransactions = [];
     const seenIds = new Set<string>();
@@ -624,6 +632,7 @@ export const getMergedTransactions = query({
             allTransactions.push({
               ...transaction,
               sourceFile: statement.fileName,
+              boundInvoiceStorageId: bindingMap.get(transaction.id) || null,
             });
           }
         }
@@ -635,6 +644,49 @@ export const getMergedTransactions = query({
       const dateA = new Date(a.dateCompleted || a.dateStarted);
       const dateB = new Date(b.dateCompleted || b.dateStarted);
       return dateB.getTime() - dateA.getTime();
+    });
+  },
+});
+
+export const bindTransactionToInvoice = mutation({
+  args: {
+    monthKey: v.string(),
+    transactionId: v.string(),
+    invoiceStorageId: v.union(v.id("_storage"), v.null()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const monthData = await ctx.db
+      .query("months")
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", userId).eq("monthKey", args.monthKey)
+      )
+      .unique();
+
+    if (!monthData) {
+      throw new Error("Month data not found");
+    }
+
+    const existingBindings = monthData.transactionInvoiceBindings || [];
+    const updatedBindings = existingBindings.filter(
+      (binding) => binding.transactionId !== args.transactionId
+    );
+
+    // Add new binding if invoiceStorageId is not null
+    if (args.invoiceStorageId) {
+      updatedBindings.push({
+        transactionId: args.transactionId,
+        invoiceStorageId: args.invoiceStorageId,
+        boundAt: Date.now(),
+      });
+    }
+
+    await ctx.db.patch(monthData._id, {
+      transactionInvoiceBindings: updatedBindings,
     });
   },
 });

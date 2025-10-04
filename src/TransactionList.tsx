@@ -3,13 +3,10 @@ import { useState } from "react";
 
 import { api } from "../convex/_generated/api";
 import { TransactionDetailsModal } from "./components/TransactionDetailsModal";
+import { TransactionInvoiceBindingModal } from "./components/TransactionInvoiceBindingModal";
 import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
 import { getInvoiceHelperLinks } from "./lib/transactionHelperLinks";
-
-interface TransactionListProps {
-  monthKey: string;
-}
 
 const cfg = {
   // Filtering constants
@@ -26,13 +23,15 @@ const cfg = {
   ],
 };
 
-export function TransactionList({ monthKey }: TransactionListProps) {
+export function TransactionList({ monthKey }: { monthKey: string }) {
   const transactions = useQuery(api.invoices.getMergedTransactions, {
     monthKey,
   });
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showFiltered, setShowFiltered] = useState(true);
+  const [bindingTransaction, setBindingTransaction] = useState<any>(null);
+  const [isBindingModalOpen, setIsBindingModalOpen] = useState(false);
 
   if (!transactions) {
     return (
@@ -147,6 +146,17 @@ export function TransactionList({ monthKey }: TransactionListProps) {
     setSelectedTransaction(null);
   };
 
+  const handleBindingClick = (transaction: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setBindingTransaction(transaction);
+    setIsBindingModalOpen(true);
+  };
+
+  const handleCloseBindingModal = () => {
+    setIsBindingModalOpen(false);
+    setBindingTransaction(null);
+  };
+
   const getAmountColor = (amount: string) => {
     if (!amount) return "text-gray-500";
     const numAmount = parseFloat(amount);
@@ -207,7 +217,9 @@ export function TransactionList({ monthKey }: TransactionListProps) {
                     <span className="font-medium text-foreground truncate text-xs">
                       {transaction.description || "No description"}
                     </span>
-                    <Badge className="uppercase text-[8px] bg-gray-100 text-gray-600 border-gray-200 px-1 py-0 shadow-none">
+                    <Badge 
+                    variant="outline"
+                    className="uppercase text-[8px] text-gray-500 px-1 py-0 shadow-none">
                       {transaction.type}
                     </Badge>
                   </div>
@@ -218,43 +230,64 @@ export function TransactionList({ monthKey }: TransactionListProps) {
                       )}
                     </span>
 
-                     {helperLinks.length > 0 && (
-                       <div className="flex gap-1">
-                         {helperLinks.map((link, linkIndex) => (
-                           <a
-                             key={linkIndex}
-                             href={link}
-                             target="_blank"
-                             rel="noopener noreferrer"
-                             onClick={(e) => e.stopPropagation()}
-                             className="text-blue-600 hover:text-blue-800 hover:underline text-[9px]"
-                           >
-                             {link.replace(/^https?:\/\//, '')}
-                           </a>
-                         ))}
-                       </div>
-                     )}
+                    {helperLinks.length > 0 && (
+                      <div className="flex gap-1">
+                        {helperLinks.map((link, linkIndex) => (
+                          <a
+                            key={linkIndex}
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-blue-600 hover:text-blue-800 hover:underline text-[9px]"
+                          >
+                            {link.replace(/^https?:\/\//, "")}
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col items-end text-right flex-shrink-0 ml-3">
-                <div
-                  className={`font-semibold text-xs ${getAmountColor(transaction.amount)}`}
-                >
-                  {formatAmount(
-                    transaction.amount,
-                    transaction.paymentCurrency
-                  )}
+              <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                <div className="flex flex-col items-end text-right">
+                  <div
+                    className={`font-semibold text-xs ${getAmountColor(transaction.amount)}`}
+                  >
+                    {formatAmount(
+                      transaction.amount,
+                      transaction.paymentCurrency
+                    )}
+                  </div>
+                  {transaction.origAmount &&
+                    transaction.origAmount !== transaction.amount && (
+                      <div className="text-[9px] text-muted-foreground">
+                        {formatAmount(
+                          transaction.origAmount,
+                          transaction.origCurrency
+                        )}
+                      </div>
+                    )}
                 </div>
-                {transaction.origAmount &&
-                  transaction.origAmount !== transaction.amount && (
-                    <div className="text-[9px] text-muted-foreground">
-                      {formatAmount(
-                        transaction.origAmount,
-                        transaction.origCurrency
-                      )}
-                    </div>
-                  )}
+                
+                {/* Binding button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => handleBindingClick(transaction, e)}
+                  className={`h-6 w-6 p-0 ${
+                    transaction.boundInvoiceStorageId
+                      ? "text-green-600 hover:text-green-700"
+                      : "text-orange-500 hover:text-orange-600"
+                  }`}
+                  title={
+                    transaction.boundInvoiceStorageId
+                      ? "Change invoice binding"
+                      : "Bind to invoice"
+                  }
+                >
+                  {transaction.boundInvoiceStorageId ? "✓" : "⚠"}
+                </Button>
               </div>
             </div>
           );
@@ -265,6 +298,13 @@ export function TransactionList({ monthKey }: TransactionListProps) {
         transaction={selectedTransaction}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+      />
+
+      <TransactionInvoiceBindingModal
+        transaction={bindingTransaction}
+        isOpen={isBindingModalOpen}
+        onClose={handleCloseBindingModal}
+        monthKey={monthKey}
       />
     </div>
   );

@@ -27,6 +27,13 @@ const applicationTables = {
         parsing: v.object({}),
       })
     ),
+    transactionInvoiceBindings: v.array(
+      v.object({
+        transactionId: v.string(),
+        invoiceStorageId: v.union(v.id("_storage"), v.null()),
+        boundAt: v.number(),
+      })
+    ),
     statements: v.array(
       v.object({
         storageId: v.id("_storage"),
