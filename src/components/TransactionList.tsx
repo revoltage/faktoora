@@ -1,5 +1,5 @@
 import { useQuery } from "convex/react";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, Minus } from "lucide-react";
 import { useState } from "react";
 
 import { api } from "../../convex/_generated/api";
@@ -43,8 +43,8 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
     );
   }
 
-  // Filter transactions based on constants
-  const filteredTransactions = transactions.filter((transaction) => {
+  // Helper function to check if a transaction needs an invoice
+  const transactionNeedsInvoice = (transaction: any) => {
     // Filter by allowed transaction types
     if (!cfg.allowedTransactionTypes.includes(transaction.type)) {
       return false;
@@ -67,7 +67,10 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
     }
 
     return true;
-  });
+  };
+
+  // Filter transactions based on constants
+  const filteredTransactions = transactions.filter(transactionNeedsInvoice);
 
   if (transactions.length === 0) {
     return (
@@ -233,21 +236,27 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                       )}
                     </span>
 
-                    {helperLinks.length > 0 && (
-                      <div className="flex gap-1">
-                        {helperLinks.map((link, linkIndex) => (
-                          <a
-                            key={linkIndex}
-                            href={link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-blue-600 hover:text-blue-800 hover:underline text-[9px]"
-                          >
-                            {link.replace(/^https?:\/\//, "")}
-                          </a>
-                        ))}
-                      </div>
+                    {transactionNeedsInvoice(transaction) ? (
+                      helperLinks.length > 0 && (
+                        <div className="flex gap-1">
+                          {helperLinks.map((link, linkIndex) => (
+                            <a
+                              key={linkIndex}
+                              href={link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-blue-600 hover:text-blue-800 hover:underline text-[9px]"
+                            >
+                              {link.replace(/^https?:\/\//, "")}
+                            </a>
+                          ))}
+                        </div>
+                      )
+                    ) : (
+                      <span className="text-gray-400 text-[9px] italic">
+                        Doesn't need invoice
+                      </span>
                     )}
                   </div>
                 </div>
@@ -273,28 +282,34 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                     )}
                 </div>
 
-                {/* Binding button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => handleBindingClick(transaction, e)}
-                  className={`h-8 w-8 p-0 ${
-                    transaction.boundInvoiceStorageId
-                      ? "text-green-600 hover:text-green-700"
-                      : "text-orange-500 hover:text-orange-600"
-                  }`}
-                  title={
-                    transaction.boundInvoiceStorageId
-                      ? "Change invoice binding"
-                      : "Bind to invoice"
-                  }
-                >
-                  {transaction.boundInvoiceStorageId ? (
-                    <CheckCircle className="h-5 w-5" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5" />
-                  )}
-                </Button>
+                {/* Binding button - only show for transactions that need invoices */}
+                {transactionNeedsInvoice(transaction) ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => handleBindingClick(transaction, e)}
+                    className={`h-8 w-8 p-0 ${
+                      transaction.boundInvoiceStorageId
+                        ? "text-green-600 hover:text-green-700"
+                        : "text-orange-500 hover:text-orange-600"
+                    }`}
+                    title={
+                      transaction.boundInvoiceStorageId
+                        ? "Change invoice binding"
+                        : "Bind to invoice"
+                    }
+                  >
+                    {transaction.boundInvoiceStorageId ? (
+                      <CheckCircle className="h-5 w-5" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5" />
+                    )}
+                  </Button>
+                ) : (
+                  <div className="h-8 w-8 flex items-center justify-center">
+                    <Minus className="h-4 w-4 text-gray-300" />
+                  </div>
+                )}
               </div>
             </div>
           );
