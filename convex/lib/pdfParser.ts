@@ -1,3 +1,5 @@
+"use node";
+
 export interface ParsingResult {
   text: string;
   success: boolean;
@@ -7,15 +9,8 @@ export interface ParsingResult {
 export async function parsePdfFromBuffer(
   buffer: Buffer
 ): Promise<ParsingResult> {
-  // const { PDFParse } = await import('pdf-parse');
   try {
-    const PDFParse = class {
-      constructor(_data: { data: Buffer }) {}
-
-      getText(): Promise<{ text: string }> {
-        throw new Error("Fake error");
-      }
-    };
+    const { PDFParse } = await import("pdf-parse");
 
     const parser = new PDFParse({ data: buffer });
     const textResult = await parser.getText();

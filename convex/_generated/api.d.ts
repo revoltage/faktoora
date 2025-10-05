@@ -18,6 +18,7 @@ import type * as featureFlags from "../featureFlags.js";
 import type * as http from "../http.js";
 import type * as invoiceAnalysis from "../invoiceAnalysis.js";
 import type * as invoiceParsing from "../invoiceParsing.js";
+import type * as invoiceParsingMutations from "../invoiceParsingMutations.js";
 import type * as invoices from "../invoices.js";
 import type * as lib_pdfParser from "../lib/pdfParser.js";
 import type * as router from "../router.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   invoiceAnalysis: typeof invoiceAnalysis;
   invoiceParsing: typeof invoiceParsing;
+  invoiceParsingMutations: typeof invoiceParsingMutations;
   invoices: typeof invoices;
   "lib/pdfParser": typeof lib_pdfParser;
   router: typeof router;
