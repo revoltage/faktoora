@@ -19,6 +19,7 @@ import type * as http from "../http.js";
 import type * as invoiceAnalysis from "../invoiceAnalysis.js";
 import type * as invoiceParsing from "../invoiceParsing.js";
 import type * as invoices from "../invoices.js";
+import type * as lib_pdfParser from "../lib/pdfParser.js";
 import type * as router from "../router.js";
 import type * as seed from "../seed.js";
 import type * as userSettings from "../userSettings.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   invoiceAnalysis: typeof invoiceAnalysis;
   invoiceParsing: typeof invoiceParsing;
   invoices: typeof invoices;
+  "lib/pdfParser": typeof lib_pdfParser;
   router: typeof router;
   seed: typeof seed;
   userSettings: typeof userSettings;

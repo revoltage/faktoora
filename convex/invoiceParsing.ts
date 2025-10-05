@@ -1,6 +1,7 @@
 import { v } from "convex/values";
-import { action, internalMutation, internalAction } from "./_generated/server";
+import { internalMutation, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { parsePdfFromBlob } from "./lib/pdfParser";
 
 const analysisResult = v.object({
   value: v.union(v.string(), v.null()),
@@ -26,8 +27,47 @@ export const parseInvoice = internalAction({
     }
 
     try {
-      // TODO: Implement classic parsing logic
-      throw new Error("Invoice parsing not implemented yet");
+      console.log("📄 Starting classic PDF parsing for invoice:", args.storageId);
+      
+      // Get the file from storage
+      const fileBlob = await ctx.storage.get(args.storageId);
+      if (!fileBlob) {
+        throw new Error("File not found in storage");
+      }
+
+      // Parse PDF using utility function
+      const result = await parsePdfFromBlob(fileBlob);
+      
+      if (result.success) {
+        console.log("✅ PDF parsing completed successfully");
+        
+        // Update the database with the extracted text
+        await ctx.runMutation(internal.invoiceParsing.updateInvoiceParsing, {
+          monthKey: args.monthKey,
+          storageId: args.storageId,
+          userId: args.userId,
+          parsedText: {
+            value: result.text,
+            error: null,
+            lastUpdated: Date.now(),
+          },
+        });
+      } else {
+        console.log("❌ PDF parsing failed:", result.error);
+        
+        // Update the database with the error
+        await ctx.runMutation(internal.invoiceParsing.updateInvoiceParsing, {
+          monthKey: args.monthKey,
+          storageId: args.storageId,
+          userId: args.userId,
+          parsedText: {
+            value: null,
+            error: result.error || "Unknown parsing error",
+            lastUpdated: Date.now(),
+          },
+        });
+      }
+      
     } catch (error) {
       console.log("❌ Invoice parsing failed:", error);
       
