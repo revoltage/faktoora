@@ -180,6 +180,13 @@ export const addIncomingInvoice = mutation({
       storageId: args.storageId,
       userId,
     });
+
+    // Always trigger background parsing - the parsing action will check the feature flag
+    await ctx.scheduler.runAfter(0, internal.invoiceParsing.parseInvoice, {
+      monthKey: args.monthKey,
+      storageId: args.storageId,
+      userId,
+    });
   },
 });
 

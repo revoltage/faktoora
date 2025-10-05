@@ -1,6 +1,5 @@
 import { v } from "convex/values";
-import { action, internalMutation } from "./_generated/server";
-import { getFeatureFlagInternal } from "./featureFlags";
+import { action, internalMutation, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 
 const analysisResult = v.object({
@@ -9,7 +8,7 @@ const analysisResult = v.object({
   lastUpdated: v.union(v.number(), v.null()),
 });
 
-export const parseInvoice = action({
+export const parseInvoice = internalAction({
   args: {
     monthKey: v.string(),
     storageId: v.id("_storage"),
@@ -26,8 +25,24 @@ export const parseInvoice = action({
       return;
     }
 
-    // TODO: Implement classic parsing logic
-    throw new Error("Invoice parsing not implemented yet");
+    try {
+      // TODO: Implement classic parsing logic
+      throw new Error("Invoice parsing not implemented yet");
+    } catch (error) {
+      console.log("❌ Invoice parsing failed:", error);
+      
+      // Update the database with the error
+      await ctx.runMutation(internal.invoiceParsing.updateInvoiceParsing, {
+        monthKey: args.monthKey,
+        storageId: args.storageId,
+        userId: args.userId,
+        parsedText: {
+          value: null,
+          error: error instanceof Error ? error.message : "Unknown parsing error",
+          lastUpdated: Date.now(),
+        },
+      });
+    }
   },
 });
 
