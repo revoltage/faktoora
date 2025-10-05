@@ -6,6 +6,18 @@ export const FEATURE_FLAGS = {
   invoiceParsing: "invoiceParsing",
 } as const;
 
+// Default values for all feature flags (all start OFF by default)
+export const DEFAULT_FEATURE_FLAGS: Record<string, { enabled: boolean; description: string }> = {
+  [FEATURE_FLAGS.invoiceAnalysis]: { 
+    enabled: false, 
+    description: "Enable AI-powered invoice analysis" 
+  },
+  [FEATURE_FLAGS.invoiceParsing]: { 
+    enabled: false, 
+    description: "Enable invoice parsing functionality" 
+  },
+};
+
 export const getFeatureFlag = query({
   args: { flagName: v.string() },
   handler: async (ctx, args) => {
@@ -16,11 +28,7 @@ export const getFeatureFlag = query({
     
     // Return default value if flag doesn't exist
     if (!flag) {
-      // Default flags with their default values
-      const defaultFlags: Record<string, boolean> = {
-        invoiceAnalysis: true,
-      };
-      return defaultFlags[args.flagName] ?? false;
+      return DEFAULT_FEATURE_FLAGS[args.flagName]?.enabled ?? false;
     }
     
     return flag.enabled;
@@ -37,11 +45,7 @@ export const getFeatureFlagInternal = internalQuery({
     
     // Return default value if flag doesn't exist
     if (!flag) {
-      // Default flags with their default values
-      const defaultFlags: Record<string, boolean> = {
-        invoiceAnalysis: true,
-      };
-      return defaultFlags[args.flagName] ?? false;
+      return DEFAULT_FEATURE_FLAGS[args.flagName]?.enabled ?? false;
     }
     
     return flag.enabled;
@@ -82,11 +86,6 @@ export const getAllFeatureFlags = query({
   handler: async (ctx) => {
     const flags = await ctx.db.query("featureFlags").collect();
     
-    // Add default flags that don't exist in the database
-    const defaultFlags: Record<string, { enabled: boolean; description?: string }> = {
-      invoiceAnalysis: { enabled: true, description: "Enable AI-powered invoice analysis" },
-    };
-    
     const flagMap = new Map<string, { enabled: boolean; description?: string }>();
     
     // Add existing flags
@@ -98,7 +97,7 @@ export const getAllFeatureFlags = query({
     }
     
     // Add default flags that don't exist
-    for (const [name, config] of Object.entries(defaultFlags)) {
+    for (const [name, config] of Object.entries(DEFAULT_FEATURE_FLAGS)) {
       if (!flagMap.has(name)) {
         flagMap.set(name, config);
       }
@@ -110,3 +109,4 @@ export const getAllFeatureFlags = query({
     }));
   },
 });
+
