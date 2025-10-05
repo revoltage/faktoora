@@ -76,7 +76,7 @@ export const EmailDraft = ({
             <Mail className="h-4 w-4" />
             Email Draft
           </div>
-          <Button
+          {/* <Button
             variant="ghost"
             size="sm"
             className="h-5 px-2 text-[10px] gap-1"
@@ -84,11 +84,10 @@ export const EmailDraft = ({
           >
             <Copy className="!h-2 !w-2" />
             Copy
-          </Button>
+          </Button> */}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-3 pt-0">
-        <Separator className="mb-2" />
 
         {/* Email Subject */}
         <div className="mb-1">
