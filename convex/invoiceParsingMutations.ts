@@ -13,6 +13,15 @@ export const updateInvoiceParsing = internalMutation({
     storageId: v.id("_storage"),
     userId: v.id("users"),
     parsedText: analysisResult,
+    pageImages: v.union(
+      v.null(),
+      v.array(
+        v.object({
+          pageNumber: v.number(),
+          storageId: v.id("_storage"),
+        })
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const monthData = await ctx.db
@@ -33,6 +42,7 @@ export const updateInvoiceParsing = internalMutation({
           parsing: {
             ...invoice.parsing,
             parsedText: args.parsedText,
+            images: args.pageImages,
           },
         };
       }

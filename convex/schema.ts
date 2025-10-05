@@ -42,6 +42,15 @@ const applicationTables = {
         }),
         parsing: v.object({
           parsedText: analysisResult,
+          images: v.union(
+            v.null(),
+            v.array(
+              v.object({
+                pageNumber: v.number(),
+                storageId: v.id("_storage"),
+              })
+            )
+          ),
         }),
       })
     ),

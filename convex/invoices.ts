@@ -157,6 +157,7 @@ export const addIncomingInvoice = mutation({
           error: null,
           lastUpdated: null,
         },
+        images: null,
       },
     };
 
