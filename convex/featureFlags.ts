@@ -1,6 +1,11 @@
 import { v } from "convex/values";
 import { query, mutation, internalQuery } from "./_generated/server";
 
+export const FEATURE_FLAGS = {
+  invoiceAnalysis: "invoiceAnalysis",
+  invoiceParsing: "invoiceParsing",
+} as const;
+
 export const getFeatureFlag = query({
   args: { flagName: v.string() },
   handler: async (ctx, args) => {

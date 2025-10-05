@@ -8,6 +8,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { groq } from "@ai-sdk/groq";
 import { google } from "@ai-sdk/google";
+import { FEATURE_FLAGS } from "./featureFlags";
 
 export const analyzeInvoice = internalAction({
   args: {
@@ -18,20 +19,23 @@ export const analyzeInvoice = internalAction({
   handler: async (ctx, args) => {
     try {
       // Check if invoice analysis feature flag is enabled
-      const isInvoiceAnalysisEnabled = await ctx.runQuery(internal.featureFlags.getFeatureFlagInternal, {
-        flagName: "invoiceAnalysis",
-      });
-      
+      const isInvoiceAnalysisEnabled = await ctx.runQuery(
+        internal.featureFlags.getFeatureFlagInternal,
+        { flagName: FEATURE_FLAGS.invoiceAnalysis }
+      );
+
       if (!isInvoiceAnalysisEnabled) {
-        console.log("🚫 Invoice analysis feature flag is disabled, setting analysis to disabled state");
-        
+        console.log(
+          "🚫 Invoice analysis feature flag is disabled, setting analysis to disabled state"
+        );
+
         // Set all analysis fields to show disabled state
         const disabledAnalysisResult = {
           value: null,
           error: "Analysis disabled",
           lastUpdated: Date.now(),
         };
-        
+
         await ctx.runMutation(internal.invoices.updateInvoiceAnalysis, {
           monthKey: args.monthKey,
           storageId: args.storageId,
@@ -42,20 +46,24 @@ export const analyzeInvoice = internalAction({
           amount: disabledAnalysisResult,
           analysisBigError: "Feature flag disabled",
         });
-        
+
         return;
       }
-      
+
       const pdfUrl = await ctx.storage.getUrl(args.storageId);
       if (!pdfUrl) {
         throw new Error("📄 PDF not found in storage");
       }
 
       // Get user's AI model preference
-      const userSettings = await ctx.runQuery(internal.userSettings.getUserSettingsInternal, {
-        userId: args.userId,
-      });
-      const modelKey = (userSettings?.aiModel as keyof typeof AI_MODELS) || "gemini";
+      const userSettings = await ctx.runQuery(
+        internal.userSettings.getUserSettingsInternal,
+        {
+          userId: args.userId,
+        }
+      );
+      const modelKey =
+        (userSettings?.aiModel as keyof typeof AI_MODELS) || "gemini";
       console.log(`🤖 Using AI model: ${modelKey} for user ${args.userId}`);
 
       const response = await fetch(pdfUrl);
@@ -112,7 +120,12 @@ export const analyzeInvoice = internalAction({
       );
 
       // Wait for all to complete (for error handling)
-      await Promise.all([datePromise, senderPromise, parsedTextPromise, amountPromise]);
+      await Promise.all([
+        datePromise,
+        senderPromise,
+        parsedTextPromise,
+        amountPromise,
+      ]);
     } catch (error) {
       console.error("🔍 Error in invoice analysis (big error):", error);
       const errorMessage =
