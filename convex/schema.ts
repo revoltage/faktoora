@@ -40,7 +40,9 @@ const applicationTables = {
           amount: analysisResult,
           analysisBigError: v.union(v.string(), v.null()),
         }),
-        parsing: v.object({}),
+        parsing: v.object({
+          parsedText: analysisResult,
+        }),
       })
     ),
     transactionInvoiceBindings: v.array(

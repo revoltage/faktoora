@@ -151,7 +151,13 @@ export const addIncomingInvoice = mutation({
         },
         analysisBigError: null,
       },
-      parsing: {},
+      parsing: {
+        parsedText: {
+          value: null,
+          error: null,
+          lastUpdated: null,
+        },
+      },
     };
 
     if (existing) {
