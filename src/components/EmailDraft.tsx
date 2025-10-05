@@ -27,9 +27,8 @@ export const EmailDraft = ({
     return null;
   }
 
-  // Create email draft content
-  const emailContent = createEmailDraft(invoices, statements, monthKey);
-  const emailSubject = createEmailSubject(invoices, statements, monthKey);
+  // Create email draft content and subject
+  const { emailContent, emailSubject } = createEmailContent(invoices, statements, monthKey);
 
   if (!emailContent) {
     return null;
@@ -92,8 +91,7 @@ export const EmailDraft = ({
         <Separator className="mb-2" />
 
         {/* Email Subject */}
-        <div className="mb-3">
-          <div className="text-xs font-medium text-gray-700 mb-1">Subject:</div>
+        <div className="mb-1">
           <div 
             className="text-[10px] text-muted-foreground font-[Arial, sans-serif] font-normal cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors border border-gray-200"
             onClick={handleCopySubject}
@@ -105,9 +103,8 @@ export const EmailDraft = ({
 
         {/* Email Body */}
         <div>
-          <div className="text-xs font-medium text-gray-700 mb-1">Body:</div>
           <pre 
-            className="whitespace-pre-wrap text-[10px] text-muted-foreground font-[Arial, sans-serif] font-normal cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors"
+            className="whitespace-pre-wrap text-[10px] text-muted-foreground font-[Arial, sans-serif] font-normal cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors border border-gray-200"
             onClick={handleCopyToClipboard}
             title="Click to copy email draft"
           >
@@ -120,14 +117,14 @@ export const EmailDraft = ({
   );
 };
 
-// Import the utility function
-function createEmailDraft(
+// Utility function to create both email content and subject
+function createEmailContent(
   invoices: any[],
   statements: any[],
   monthKey: string
 ) {
   if (invoices.length === 0 && statements.length === 0) {
-    return null;
+    return { emailContent: null, emailSubject: "" };
   }
 
   // Parse month from monthKey (format: "YYYY-MM")
@@ -152,9 +149,19 @@ function createEmailDraft(
   const monthName = monthNames[parseInt(month) - 1];
   const yearStr = year;
 
-  // Check for PDF statements specifically
+  // Check for PDF statements and invoices
   const hasPdfStatements = statements.some((stmt) => stmt.fileType === "pdf");
   const hasInvoices = invoices.length > 0;
+
+  // Create subject based on what's available
+  let emailSubject = "";
+  if (hasPdfStatements && hasInvoices) {
+    emailSubject = `Извлечения от Револют и фактури за месец ${monthName} ${yearStr}`;
+  } else if (hasPdfStatements) {
+    emailSubject = `Извлечения от Револют за месец ${monthName} ${yearStr}`;
+  } else {
+    emailSubject = `Фактури за месец ${monthName} ${yearStr}`;
+  }
 
   // Build the email content
   let emailContent = "Здравей,\n\n";
@@ -182,51 +189,5 @@ function createEmailDraft(
     });
   }
 
-  return emailContent;
-}
-
-// Function to create email subject
-function createEmailSubject(
-  invoices: any[],
-  statements: any[],
-  monthKey: string
-) {
-  if (invoices.length === 0 && statements.length === 0) {
-    return "";
-  }
-
-  // Parse month from monthKey (format: "YYYY-MM")
-  const [year, month] = monthKey.split("-");
-
-  // Use Bulgarian locale for month name
-  const monthNames = [
-    "януари",
-    "февруари", 
-    "март",
-    "април",
-    "май",
-    "юни",
-    "юли",
-    "август",
-    "септември",
-    "октомври",
-    "ноември",
-    "декември",
-  ];
-
-  const monthName = monthNames[parseInt(month) - 1];
-  const yearStr = year;
-
-  // Check for PDF statements and invoices
-  const hasPdfStatements = statements.some((stmt) => stmt.fileType === "pdf");
-  const hasInvoices = invoices.length > 0;
-
-  // Build the subject based on what's available
-  if (hasPdfStatements && hasInvoices) {
-    return `Извлечения от Револют и фактури за месец ${monthName} ${yearStr}`;
-  } else if (hasPdfStatements) {
-    return `Извлечения от Револют за месец ${monthName} ${yearStr}`;
-  } else {
-    return `Фактури за месец ${monthName} ${yearStr}`;
-  }
+  return { emailContent, emailSubject };
 }
