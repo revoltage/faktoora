@@ -5,7 +5,7 @@ export function AuthenticationPage() {
     <div className="flex items-center justify-center min-h-screen p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-4">
-          <h1 className="text-sm font-medium text-foreground">Facktoora</h1>
+          <h1 className="text-sm font-medium text-foreground">Faktoora</h1>
         </div>
         <SignInForm />
       </div>

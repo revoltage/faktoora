@@ -19,7 +19,7 @@ export function Header({ center, className = "" }: HeaderProps) {
       >
         <div className="flex items-center">
           <h2 className="text-sm font-semibold text-primary tracking-tight">
-            Facktoora
+            Faktoora
           </h2>
         </div>
         <div className="flex items-center">{center}</div>
