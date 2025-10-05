@@ -8,6 +8,7 @@ import { InvoiceList } from "../components/InvoiceList";
 import { StatementsSection } from "../components/StatementsSection";
 import { EmailDraft } from "../components/EmailDraft";
 import { Button } from "../components/ui/button";
+import { useFeatureFlagsDebugSetter } from "../hooks/useFeatureFlags";
 
 interface UploadingInvoice {
   fileName: string;
@@ -117,6 +118,9 @@ export function InvoiceManagerPageContent({
   const updateInvoiceName = useMutation(api.invoices.updateInvoiceName);
   const deleteAllStatements = useMutation(api.invoices.deleteAllStatements);
   const deleteAllInvoices = useMutation(api.invoices.deleteAllInvoices);
+
+  // Feature flags
+  useFeatureFlagsDebugSetter();
 
   const [uploadingInvoices, setUploadingInvoices] = useState<
     UploadingInvoice[]

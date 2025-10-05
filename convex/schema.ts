@@ -17,6 +17,13 @@ const applicationTables = {
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"]),
+  featureFlags: defineTable({
+    flagName: v.string(),
+    enabled: v.boolean(),
+    description: v.optional(v.string()),
+    updatedAt: v.number(),
+  })
+    .index("by_flag_name", ["flagName"]),
   months: defineTable({
     userId: v.id("users"),
     monthKey: v.string(), // Format: "YYYY-MM"

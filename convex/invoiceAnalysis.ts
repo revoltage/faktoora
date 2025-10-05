@@ -17,6 +17,35 @@ export const analyzeInvoice = internalAction({
   },
   handler: async (ctx, args) => {
     try {
+      // Check if invoice analysis feature flag is enabled
+      const isInvoiceAnalysisEnabled = await ctx.runQuery(internal.featureFlags.getFeatureFlagInternal, {
+        flagName: "invoiceAnalysis",
+      });
+      
+      if (!isInvoiceAnalysisEnabled) {
+        console.log("🚫 Invoice analysis feature flag is disabled, setting analysis to disabled state");
+        
+        // Set all analysis fields to show disabled state
+        const disabledAnalysisResult = {
+          value: null,
+          error: "Analysis disabled",
+          lastUpdated: Date.now(),
+        };
+        
+        await ctx.runMutation(internal.invoices.updateInvoiceAnalysis, {
+          monthKey: args.monthKey,
+          storageId: args.storageId,
+          userId: args.userId,
+          date: disabledAnalysisResult,
+          sender: disabledAnalysisResult,
+          parsedText: disabledAnalysisResult,
+          amount: disabledAnalysisResult,
+          analysisBigError: "Feature flag disabled",
+        });
+        
+        return;
+      }
+      
       const pdfUrl = await ctx.storage.getUrl(args.storageId);
       if (!pdfUrl) {
         throw new Error("📄 PDF not found in storage");

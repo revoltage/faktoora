@@ -168,7 +168,7 @@ export const addIncomingInvoice = mutation({
       });
     }
 
-    // Trigger background analysis (includes parsing)
+    // Always trigger background analysis - the analysis action will check the feature flag
     await ctx.scheduler.runAfter(0, internal.invoiceAnalysis.analyzeInvoice, {
       monthKey: args.monthKey,
       storageId: args.storageId,
