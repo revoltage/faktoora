@@ -374,46 +374,66 @@ export const InvoiceList = ({
                         <span>•</span>
                         <span>{formatInvoiceDate(invoice.uploadedAt)}</span>
                         <span>•</span>
-                        <span>
-                          {invoice.parsing.parsedText.error ? (
-                            <span
-                              className="text-red-600 cursor-pointer"
-                              onClick={() =>
-                                console.error(
-                                  "📝 Classic Parsing Error:",
-                                  invoice.parsing.parsedText.error
-                                )
-                              }
-                            >
-                              Classic error
-                            </span>
-                          ) : invoice.parsing.parsedText.lastUpdated === null ? (
-                            <span className="text-yellow-600 animate-pulse">
-                              Classic parsing...
-                            </span>
-                          ) : invoice.parsing.parsedText.value ? (
-                            <span className="text-blue-600">Classic ✓</span>
-                          ) : invoice.analysis.parsedText.error ? (
-                            <span
-                              className="text-red-600 cursor-pointer"
-                              onClick={() =>
-                                console.error(
-                                  "📝 AI Parsing Error:",
-                                  invoice.analysis.parsedText.error
-                                )
-                              }
-                            >
-                              AI error
-                            </span>
-                          ) : invoice.analysis.parsedText.lastUpdated === null ? (
-                            <span className="text-yellow-600 animate-pulse">
-                              AI parsing...
-                            </span>
-                          ) : invoice.analysis.parsedText.value ? (
-                            <span className="text-green-600">AI ✓</span>
-                          ) : (
-                            <span className="text-gray-400">Not parsed</span>
-                          )}
+                        <span className="flex items-center gap-1">
+                          {/* Classic Parsing Status */}
+                          <span>
+                            {invoice.parsing.parsedText.error ? (
+                              <span
+                                className="text-red-600 cursor-pointer"
+                                onClick={() =>
+                                  console.error(
+                                    "📝 Classic Parsing Error:",
+                                    invoice.parsing.parsedText.error
+                                  )
+                                }
+                                title={`Classic Error: ${invoice.parsing.parsedText.error}`}
+                              >
+                                C✗
+                              </span>
+                            ) : invoice.parsing.parsedText.lastUpdated === null ? (
+                              <span className="text-yellow-600 animate-pulse" title="Classic parsing...">
+                                C⏳
+                              </span>
+                            ) : invoice.parsing.parsedText.value ? (
+                              <span className="text-blue-600" title="Classic parsing complete">
+                                C✓
+                              </span>
+                            ) : (
+                              <span className="text-gray-400" title="Classic parsing not started">
+                                C-
+                              </span>
+                            )}
+                          </span>
+
+                          {/* AI Parsing Status */}
+                          <span>
+                            {invoice.analysis.parsedText.error ? (
+                              <span
+                                className="text-red-600 cursor-pointer"
+                                onClick={() =>
+                                  console.error(
+                                    "📝 AI Parsing Error:",
+                                    invoice.analysis.parsedText.error
+                                  )
+                                }
+                                title={`AI Error: ${invoice.analysis.parsedText.error}`}
+                              >
+                                A✗
+                              </span>
+                            ) : invoice.analysis.parsedText.lastUpdated === null ? (
+                              <span className="text-yellow-600 animate-pulse" title="AI parsing...">
+                                A⏳
+                              </span>
+                            ) : invoice.analysis.parsedText.value ? (
+                              <span className="text-green-600" title="AI parsing complete">
+                                A✓
+                              </span>
+                            ) : (
+                              <span className="text-gray-400" title="AI parsing not started">
+                                A-
+                              </span>
+                            )}
+                          </span>
                         </span>
                       </div>
                       <div className="ml-2">{renderVatIdStatus(invoice)}</div>

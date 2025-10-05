@@ -18,7 +18,22 @@ export const parseInvoice = internalAction({
     });
 
     if (!isEnabled) {
-      console.log("🚫 Invoice parsing feature is disabled");
+      console.log("🚫 Invoice parsing feature is disabled, setting parsing to disabled state");
+      
+      // Set parsing field to show disabled state
+      const disabledParsingResult = {
+        value: null,
+        error: "Classic parsing disabled",
+        lastUpdated: Date.now(),
+      };
+
+      await ctx.runMutation(internal.invoiceParsingMutations.updateInvoiceParsing, {
+        monthKey: args.monthKey,
+        storageId: args.storageId,
+        userId: args.userId,
+        parsedText: disabledParsingResult,
+      });
+
       return;
     }
 
