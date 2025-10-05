@@ -136,10 +136,22 @@ export const InvoiceDetailsModal = ({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Text Parsing</span>
+                    <span className="text-sm font-medium">Classic Parsing</span>
+                    {getStatusBadge(invoice.parsing, "parsedText")}
+                  </div>
+                  {invoice.parsing.parsedText.error && (
+                    <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                      {invoice.parsing.parsedText.error}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">AI Text Parsing</span>
                     {getStatusBadge(invoice.analysis, "parsedText")}
                   </div>
                   {invoice.analysis.parsedText.error && (
@@ -298,10 +310,23 @@ export const InvoiceDetailsModal = ({
                 </div>
               </div>
 
+              {invoice.parsing.parsedText.value && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Classic Parsed Text:
+                  </span>
+                  <div className="mt-2 p-3 bg-blue-50 rounded-md max-h-40 overflow-y-auto">
+                    <p className="text-xs whitespace-pre-wrap">
+                      {invoice.parsing.parsedText.value}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {invoice.analysis.parsedText.value && (
                 <div>
                   <span className="text-sm font-medium text-muted-foreground">
-                    Parsed Text:
+                    AI Parsed Text:
                   </span>
                   <div className="mt-2 p-3 bg-gray-50 rounded-md max-h-40 overflow-y-auto">
                     <p className="text-xs whitespace-pre-wrap">
