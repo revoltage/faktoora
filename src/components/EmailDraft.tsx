@@ -80,7 +80,11 @@ export const EmailDraft = ({
         <Separator className="mb-2" />
 
         {/* <pre className="whitespace-pre-wrap text-[10px] text-muted-foreground bg-gray-50 p-3 rounded border font-[Arial, sans-serif] font-normal"> */}
-        <pre className="whitespace-pre-wrap text-[10px] text-muted-foreground font-[Arial, sans-serif] font-normal">
+        <pre 
+          className="whitespace-pre-wrap text-[10px] text-muted-foreground font-[Arial, sans-serif] font-normal cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors"
+          onClick={handleCopyToClipboard}
+          title="Click to copy email draft"
+        >
           {emailContent}
           {renderUploadingInvoices()}
         </pre>
