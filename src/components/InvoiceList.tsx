@@ -157,6 +157,15 @@ export const InvoiceList = ({
   };
 
   const renderVatIdStatus = (invoice: any) => {
+    // Check if VAT ID is configured in settings
+    if (!userSettings?.vatId) {
+      return (
+        <span className="text-[9px] text-gray-500 bg-gray-100 px-2 py-0 rounded border">
+          No VAT ID set
+        </span>
+      );
+    }
+
     // Use classic parsing first, fallback to AI analysis
     const parsedText = invoice.parsing.parsedText.value || invoice.analysis.parsedText.value;
     
@@ -164,7 +173,7 @@ export const InvoiceList = ({
       return <span className="text-[9px] text-gray-400">No parsed text</span>;
     }
 
-    const vatCheck = checkVatIdInText(parsedText, userSettings?.vatId);
+    const vatCheck = checkVatIdInText(parsedText, userSettings.vatId);
 
     if (vatCheck.found) {
       return (
