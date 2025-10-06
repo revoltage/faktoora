@@ -173,6 +173,11 @@ export const addIncomingInvoice = mutation({
           error: null,
           lastUpdated: null,
         },
+        parsedTables: {
+          value: null,
+          error: null,
+          lastUpdated: null,
+        },
       },
     };
 

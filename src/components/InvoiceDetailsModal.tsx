@@ -47,6 +47,13 @@ export const InvoiceDetailsModal = ({
 
   const getStatusBadge = (analysis: any, field: string) => {
     const fieldData = analysis[field];
+    if (!fieldData) {
+      return (
+        <Badge variant="outline" className="text-xs">
+          N/A
+        </Badge>
+      );
+    }
     if (fieldData.error) {
       return (
         <Badge variant="destructive" className="text-xs">
@@ -73,6 +80,15 @@ export const InvoiceDetailsModal = ({
         N/A
       </Badge>
     );
+  };
+
+  const formatJson = (value: string) => {
+    try {
+      const parsed = JSON.parse(value);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return value;
+    }
   };
 
   const handleSaveName = async () => {
@@ -136,7 +152,7 @@ export const InvoiceDetailsModal = ({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Classic Parsing</span>
@@ -145,6 +161,18 @@ export const InvoiceDetailsModal = ({
                   {invoice.parsing.parsedText.error && (
                     <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
                       {invoice.parsing.parsedText.error}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Classic Tables</span>
+                    {getStatusBadge(invoice.parsing, "parsedTables")}
+                  </div>
+                  {invoice.parsing.parsedTables?.error && (
+                    <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                      {invoice.parsing.parsedTables.error}
                     </p>
                   )}
                 </div>
@@ -319,6 +347,19 @@ export const InvoiceDetailsModal = ({
                     <p className="text-xs whitespace-pre-wrap">
                       {invoice.parsing.parsedText.value}
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {invoice.parsing.parsedTables?.value && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Classic Parsed Tables:
+                  </span>
+                  <div className="mt-2 p-3 bg-blue-50 rounded-md max-h-40 overflow-y-auto">
+                    <pre className="text-xs whitespace-pre-wrap">
+                      {formatJson(invoice.parsing.parsedTables?.value ?? "")}
+                    </pre>
                   </div>
                 </div>
               )}

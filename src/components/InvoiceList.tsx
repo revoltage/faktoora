@@ -405,6 +405,45 @@ export const InvoiceList = ({
                             )}
                           </span>
 
+                          {/* Classic Tables Status */}
+                          <span>
+                            {invoice.parsing.parsedTables?.error ? (
+                              <span
+                                className="text-red-600 cursor-pointer"
+                                onClick={() =>
+                                  console.error(
+                                    "📊 Classic Table Parsing Error:",
+                                    invoice.parsing.parsedTables?.error
+                                  )
+                                }
+                                title={`Classic Tables Error: ${invoice.parsing.parsedTables?.error ?? ""}`}
+                              >
+                                T✗
+                              </span>
+                            ) : invoice.parsing.parsedTables?.lastUpdated === null ? (
+                              <span
+                                className="text-yellow-600 animate-pulse"
+                                title="Classic table parsing..."
+                              >
+                                T⏳
+                              </span>
+                            ) : invoice.parsing.parsedTables?.value ? (
+                              <span
+                                className="text-indigo-600"
+                                title="Classic table parsing complete"
+                              >
+                                T✓
+                              </span>
+                            ) : (
+                              <span
+                                className="text-gray-400"
+                                title="Classic table parsing not started"
+                              >
+                                T-
+                              </span>
+                            )}
+                          </span>
+
                           {/* AI Parsing Status */}
                           <span>
                             {invoice.analysis.parsedText.error ? (
