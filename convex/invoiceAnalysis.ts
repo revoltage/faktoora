@@ -44,6 +44,11 @@ export const analyzeInvoice = internalAction({
           sender: disabledAnalysisResult,
           parsedText: disabledAnalysisResult,
           amount: disabledAnalysisResult,
+          paidItems: {
+            value: null,
+            error: "Analysis disabled",
+            lastUpdated: Date.now(),
+          },
           analysisBigError: "Feature flag disabled",
         });
 
@@ -119,12 +124,25 @@ export const analyzeInvoice = internalAction({
         }
       );
 
+      const paidItemsPromise = extractInvoicePaidItems(pdfBuffer, modelKey).then(
+        async (paidItemsResult) => {
+          await ctx.runMutation(internal.invoices.updateInvoicePaidItems, {
+            monthKey: args.monthKey,
+            storageId: args.storageId,
+            userId: args.userId,
+            paidItems: paidItemsResult,
+          });
+          return paidItemsResult;
+        }
+      );
+
       // Wait for all to complete (for error handling)
       await Promise.all([
         datePromise,
         senderPromise,
         parsedTextPromise,
         amountPromise,
+        paidItemsPromise,
       ]);
     } catch (error) {
       console.error("🔍 Error in invoice analysis (big error):", error);
@@ -254,4 +272,75 @@ async function extractInvoiceAmount(
     pdfBuffer,
     modelKey
   );
+}
+
+async function extractInvoicePaidItems(
+  pdfBuffer: ArrayBuffer,
+  modelKey: keyof typeof AI_MODELS = "gemini"
+): Promise<{
+  value: Array<{ description: string; amount: string }> | null;
+  error: string | null;
+  lastUpdated: number;
+}> {
+  const now = Date.now();
+  try {
+    const result = await generateText({
+      model: AI_MODELS[modelKey],
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Extract all individual line items from this invoice PDF. For each item, provide the description and amount. Return ONLY a JSON array in this exact format: [{\"description\": \"Item description\", \"amount\": \"amount with currency\"}, ...]. If no line items are found, return 'null'. Do not include any other text.",
+            },
+            {
+              type: "file",
+              data: Buffer.from(pdfBuffer),
+              mediaType: "application/pdf",
+            },
+          ],
+        },
+      ],
+    });
+
+    const content = result.text.trim();
+    if (content === "null" || !content) {
+      return {
+        value: null,
+        error: null,
+        lastUpdated: now,
+      };
+    }
+
+    try {
+      const parsedItems = JSON.parse(content);
+      if (Array.isArray(parsedItems)) {
+        return {
+          value: parsedItems,
+          error: null,
+          lastUpdated: now,
+        };
+      } else {
+        return {
+          value: null,
+          error: "Invalid JSON format - not an array",
+          lastUpdated: now,
+        };
+      }
+    } catch (parseError) {
+      return {
+        value: null,
+        error: `JSON parse error: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+        lastUpdated: now,
+      };
+    }
+  } catch (error) {
+    console.error("🤖 Error calling LLM for paid items:", error);
+    return {
+      value: null,
+      error: error instanceof Error ? error.message : String(error),
+      lastUpdated: now,
+    };
+  }
 }

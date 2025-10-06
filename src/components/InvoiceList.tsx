@@ -438,6 +438,22 @@ export const InvoiceList = ({
                       </div>
                       <div className="ml-2">{renderVatIdStatus(invoice)}</div>
                     </div>
+
+                    {/* Paid Items Row */}
+                    {invoice.analysis.paidItems.value && Array.isArray(invoice.analysis.paidItems.value) && invoice.analysis.paidItems.value.length > 0 && (
+                      <div className="text-[8px] text-gray-500 mt-0.5">
+                        <span className="font-medium">Items: </span>
+                        {invoice.analysis.paidItems.value.slice(0, 3).map((item, index) => (
+                          <span key={index}>
+                            {item.description} ({item.amount})
+                            {index < Math.min(invoice.analysis.paidItems.value.length, 3) - 1 && ", "}
+                          </span>
+                        ))}
+                        {invoice.analysis.paidItems.value.length > 3 && (
+                          <span> +{invoice.analysis.paidItems.value.length - 3} more</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 ml-3">
