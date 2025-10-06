@@ -18,15 +18,6 @@ export const EmailDraft = ({
   monthKey,
   uploadingInvoices = [],
 }: EmailDraftProps) => {
-  // Check if there are PDF statements or invoices
-  const hasPdfStatements = statements.some((stmt) => stmt.fileType === "pdf");
-  const hasInvoices = invoices.length > 0;
-
-  // Only render if there are PDF statements or invoices
-  if (!hasPdfStatements && !hasInvoices) {
-    return null;
-  }
-
   // Create email draft content and subject
   const { emailContent, emailSubject } = createEmailContent(invoices, statements, monthKey);
 
@@ -122,10 +113,6 @@ function createEmailContent(
   statements: any[],
   monthKey: string
 ) {
-  if (invoices.length === 0 && statements.length === 0) {
-    return { emailContent: null, emailSubject: "" };
-  }
-
   // Parse month from monthKey (format: "YYYY-MM")
   const [year, month] = monthKey.split("-");
 
@@ -160,6 +147,11 @@ function createEmailContent(
     emailSubject = `Извлечения от Револют за месец ${monthName} ${yearStr}`;
   } else {
     emailSubject = `Фактури за месец ${monthName} ${yearStr}`;
+  }
+
+  if (!hasInvoices && !hasPdfStatements) {
+    const emailContent = `Здравей,\n\nЩе ти изпратя извлеченията от Револют и фактурите за месец ${monthName} по-късно днес`;
+    return { emailContent, emailSubject };
   }
 
   // Build the email content
