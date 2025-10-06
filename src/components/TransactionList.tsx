@@ -180,15 +180,15 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-foreground tracking-tight">
+      <div className="flex items-center justify-between mb-2 gap-2 min-w-0">
+        <h3 className="text-sm font-semibold text-foreground tracking-tight truncate">
           📊 Transactions ({displayTransactions.length}
           {showFiltered && filteredTransactions.length !== transactions.length
             ? `/${transactions.length}`
             : ""}
           )
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
           <Button
             variant="link"
             size="sm"
@@ -226,7 +226,7 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                       {transaction.type}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-3 text-[9px] text-muted-foreground min-w-0">
+                  <div className="flex items-center gap-2 sm:gap-3 text-[9px] text-muted-foreground min-w-0">
                     <span className="whitespace-nowrap">
                       {formatDate(
                         transaction.dateCompleted || transaction.dateStarted
@@ -235,7 +235,7 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
 
                     {transactionNeedsInvoice(transaction) ? (
                       helperLinks.length > 0 && (
-                        <div className="flex gap-1">
+                        <div className="flex min-w-0 flex-1 gap-1 overflow-hidden">
                           {helperLinks.map((link, linkIndex) => (
                             <a
                               key={linkIndex}
@@ -243,7 +243,8 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="text-blue-600 hover:text-blue-800 hover:underline text-[9px]"
+                              className="text-blue-600 hover:text-blue-800 hover:underline text-[9px] truncate max-w-[6rem] inline-block"
+                              title={link}
                             >
                               {link.replace(/^https?:\/\//, "")}
                             </a>

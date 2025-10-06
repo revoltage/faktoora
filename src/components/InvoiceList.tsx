@@ -200,9 +200,9 @@ export const InvoiceList = ({
       onDragLeave={handleDragLeave}
     >
       <CardHeader className="p-3 pb-2">
-        <CardTitle className="text-sm font-semibold tracking-tight flex items-center justify-between">
-          Incoming Invoices
-          <div className="flex gap-2">
+        <CardTitle className="text-sm font-semibold tracking-tight flex items-center justify-between gap-2 min-w-0">
+          <span className="truncate">Incoming Invoices</span>
+          <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
             {deleteAllInvoices && incomingInvoices.length > 0 && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -372,7 +372,7 @@ export const InvoiceList = ({
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <span className="truncate">{invoice.fileName}</span>
                         <span>•</span>
-                        <span>{formatInvoiceDate(invoice.uploadedAt)}</span>
+                        <span className="whitespace-nowrap">{formatInvoiceDate(invoice.uploadedAt)}</span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
                           {/* Classic Parsing Status */}
