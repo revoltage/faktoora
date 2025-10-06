@@ -12,7 +12,8 @@ export const updateInvoiceParsing = internalMutation({
     monthKey: v.string(),
     storageId: v.id("_storage"),
     userId: v.id("users"),
-    parsedText: analysisResult,
+    parsedText: v.optional(analysisResult),
+    parsedTables: v.optional(analysisResult),
   },
   handler: async (ctx, args) => {
     const monthData = await ctx.db
@@ -28,11 +29,33 @@ export const updateInvoiceParsing = internalMutation({
 
     const updatedInvoices = monthData.incomingInvoices.map((invoice) => {
       if (invoice.storageId === args.storageId) {
+        const existingParsing = invoice.parsing ?? {
+          parsedText: {
+            value: null,
+            error: null,
+            lastUpdated: null,
+          },
+          parsedTables: {
+            value: null,
+            error: null,
+            lastUpdated: null,
+          },
+        };
+
+        const updatedParsing = { ...existingParsing };
+
+        if (args.parsedText) {
+          updatedParsing.parsedText = args.parsedText;
+        }
+
+        if (args.parsedTables) {
+          updatedParsing.parsedTables = args.parsedTables;
+        }
+
         return {
           ...invoice,
           parsing: {
-            ...invoice.parsing,
-            parsedText: args.parsedText,
+            ...updatedParsing,
           },
         };
       }
