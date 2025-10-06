@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 
@@ -17,6 +18,21 @@ function getFileNameWithoutExtension(fileName: string): string {
     return fileName;
   }
   return fileName.substring(0, lastDotIndex);
+}
+
+// Helper to safely delete a file from storage, ignoring missing files
+async function safeDeleteStorage(
+  ctx: any,
+  storageId: Id<"_storage">
+) {
+  try {
+    const url = await ctx.storage.getUrl(storageId);
+    if (url) {
+      await ctx.storage.delete(storageId);
+    }
+  } catch (error) {
+    console.warn('Failed to delete file from storage.', error);
+  }
 }
 
 // Migration function to add name field to existing invoices
@@ -264,7 +280,7 @@ export const deleteIncomingInvoice = mutation({
           (inv) => inv.storageId !== args.storageId
         ),
       });
-      await ctx.storage.delete(args.storageId);
+      await safeDeleteStorage(ctx, args.storageId);
     }
   },
 });
@@ -293,7 +309,7 @@ export const deleteStatement = mutation({
           (stmt) => stmt.storageId !== args.storageId
         ),
       });
-      await ctx.storage.delete(args.storageId);
+      await safeDeleteStorage(ctx, args.storageId);
     }
   },
 });
@@ -730,7 +746,7 @@ export const deleteAllStatements = mutation({
 
     // Delete all statement files from storage
     for (const statement of monthData.statements) {
-      await ctx.storage.delete(statement.storageId);
+      await safeDeleteStorage(ctx, statement.storageId);
     }
 
     // Clear statements array and transaction bindings
@@ -764,7 +780,7 @@ export const deleteAllInvoices = mutation({
 
     // Delete all invoice files from storage
     for (const invoice of monthData.incomingInvoices) {
-      await ctx.storage.delete(invoice.storageId);
+      await safeDeleteStorage(ctx, invoice.storageId);
     }
 
     // Clear incoming invoices array
@@ -816,4 +832,3 @@ export const bindTransactionToInvoice = mutation({
     });
   },
 });
-
