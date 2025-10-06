@@ -5,7 +5,18 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 
 const analysisResult = v.object({
-  value: v.union(v.string(), v.null()),
+  value: v.union(v.any(), v.null()),
+  error: v.union(v.string(), v.null()),
+  lastUpdated: v.union(v.number(), v.null()),
+});
+
+const paidItem = v.object({
+  description: v.string(),
+  amount: v.string(),
+});
+
+const paidItemsAnalysisResult = v.object({
+  value: v.union(v.array(paidItem), v.null()),
   error: v.union(v.string(), v.null()),
   lastUpdated: v.union(v.number(), v.null()),
 });
@@ -161,6 +172,11 @@ export const addIncomingInvoice = mutation({
           lastUpdated: null,
         },
         amount: {
+          value: null,
+          error: null,
+          lastUpdated: null,
+        },
+        paidItems: {
           value: null,
           error: null,
           lastUpdated: null,
@@ -323,6 +339,7 @@ export const updateInvoiceAnalysis = internalMutation({
     sender: analysisResult,
     parsedText: analysisResult,
     amount: analysisResult,
+    paidItems: paidItemsAnalysisResult,
     analysisBigError: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
@@ -346,6 +363,7 @@ export const updateInvoiceAnalysis = internalMutation({
             sender: args.sender,
             parsedText: args.parsedText,
             amount: args.amount,
+            paidItems: args.paidItems,
             analysisBigError: args.analysisBigError,
           },
         };
@@ -539,6 +557,44 @@ export const updateInvoiceAmount = internalMutation({
           analysis: {
             ...invoice.analysis,
             amount: args.amount,
+          },
+        };
+      }
+      return invoice;
+    });
+
+    await ctx.db.patch(monthData._id, {
+      incomingInvoices: updatedInvoices,
+    });
+  },
+});
+
+export const updateInvoicePaidItems = internalMutation({
+  args: {
+    monthKey: v.string(),
+    storageId: v.id("_storage"),
+    userId: v.id("users"),
+    paidItems: paidItemsAnalysisResult,
+  },
+  handler: async (ctx, args) => {
+    const monthData = await ctx.db
+      .query("months")
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
+      )
+      .unique();
+
+    if (!monthData) {
+      return;
+    }
+
+    const updatedInvoices = monthData.incomingInvoices.map((invoice) => {
+      if (invoice.storageId === args.storageId) {
+        return {
+          ...invoice,
+          analysis: {
+            ...invoice.analysis,
+            paidItems: args.paidItems,
           },
         };
       }

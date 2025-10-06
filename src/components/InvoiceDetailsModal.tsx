@@ -196,6 +196,18 @@ export const InvoiceDetailsModal = ({
                     </p>
                   )}
                 </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Paid Items</span>
+                    {getStatusBadge(invoice.analysis, "paidItems")}
+                  </div>
+                  {invoice.analysis.paidItems.error && (
+                    <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                      {invoice.analysis.paidItems.error}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {invoice.analysis.analysisBigError && (
@@ -307,6 +319,28 @@ export const InvoiceDetailsModal = ({
                       </span>
                     )}
                   </p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Paid Items:
+                  </span>
+                  <div className="mt-1">
+                    {invoice.analysis.paidItems.value && Array.isArray(invoice.analysis.paidItems.value) && invoice.analysis.paidItems.value.length > 0 ? (
+                      <div className="space-y-1">
+                        {invoice.analysis.paidItems.value.map((item, index) => (
+                          <div key={index} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
+                            <span className="flex-1">{item.description}</span>
+                            <span className="font-medium text-green-700 ml-2">{item.amount}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground italic">
+                        Not available
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
