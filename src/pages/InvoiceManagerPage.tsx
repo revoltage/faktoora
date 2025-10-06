@@ -70,26 +70,28 @@ export function InvoiceManagerPage() {
   };
 
   return (
-    <div>
+    <div className="min-h-screen flex flex-col">
       <Header
         center={
-          <div className="flex items-center gap-2">
+          <div className="flex w-full max-w-xs sm:max-w-sm items-center justify-center gap-1 sm:gap-2 min-w-0">
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2 text-[11px]"
+              className="h-7 px-2 text-[11px] sm:px-3"
               onClick={goToPreviousMonth}
+              aria-label="Go to previous month"
             >
               ← Prev
             </Button>
-            <span className="text-sm font-medium">
+            <span className="block text-sm font-medium truncate text-center">
               {formatMonthDisplay(currentMonth)}
             </span>
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2 text-[11px]"
+              className="h-7 px-2 text-[11px] sm:px-3"
               onClick={goToNextMonth}
+              aria-label="Go to next month"
             >
               Next →
             </Button>
@@ -97,7 +99,7 @@ export function InvoiceManagerPage() {
         }
       />
 
-      <main className="flex-1 p-4 max-w-3xl mx-auto">
+      <main className="flex-1 w-full px-2 pb-6 pt-4 sm:px-4 max-w-3xl mx-auto">
         <InvoiceManagerPageContent currentMonth={currentMonth} />
       </main>
     </div>
@@ -167,20 +169,19 @@ export function InvoiceManagerPageContent({
 
   if (!monthData) {
     return (
-      <main className="flex justify-center items-center mt-16">
+      <div className="flex justify-center items-center mt-16">
         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="flex-1 p-4 max-w-3xl mx-auto">
-      <div className="mt-4">
-        <EmailDraft
-          invoices={monthData.incomingInvoices}
-          statements={monthData.statements}
-          monthKey={currentMonth}
-          uploadingInvoices={uploadingInvoices}
+    <div className="mt-4 space-y-3 sm:space-y-4">
+      <EmailDraft
+        invoices={monthData.incomingInvoices}
+        statements={monthData.statements}
+        monthKey={currentMonth}
+        uploadingInvoices={uploadingInvoices}
         />
 
         <StatementsSection
@@ -190,19 +191,17 @@ export function InvoiceManagerPageContent({
           deleteAllStatements={deleteAllStatements}
         />
 
-        <InvoiceList
-          monthKey={currentMonth}
-          incomingInvoices={monthData.incomingInvoices}
-          uploadingInvoices={uploadingInvoices}
-          generateUploadUrl={generateUploadUrl}
-          addIncomingInvoice={addIncomingInvoice}
-          deleteIncomingInvoice={deleteIncomingInvoice}
-          onInvoiceClick={openInvoiceModal}
-          onUploadingStateChange={setUploadingInvoices}
-          deleteAllInvoices={deleteAllInvoices}
-        />
-      </div>
-
+      <InvoiceList
+        monthKey={currentMonth}
+        incomingInvoices={monthData.incomingInvoices}
+        uploadingInvoices={uploadingInvoices}
+        generateUploadUrl={generateUploadUrl}
+        addIncomingInvoice={addIncomingInvoice}
+        deleteIncomingInvoice={deleteIncomingInvoice}
+        onInvoiceClick={openInvoiceModal}
+        onUploadingStateChange={setUploadingInvoices}
+        deleteAllInvoices={deleteAllInvoices}
+      />
       {/* Invoice Details Modal */}
       <InvoiceDetailsModal
         invoice={selectedInvoice}
@@ -212,6 +211,6 @@ export function InvoiceManagerPageContent({
         onUpdateName={handleUpdateInvoiceName}
         monthKey={currentMonth}
       />
-    </main>
+    </div>
   );
 }

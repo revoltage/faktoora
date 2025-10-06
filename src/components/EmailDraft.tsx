@@ -60,12 +60,12 @@ export const EmailDraft = ({
   };
 
   return (
-    <Card className="mb-3 border border-gray-200 shadow-sm">
+    <Card className="border border-gray-200 shadow-sm">
       <CardHeader className="p-3 pb-2">
-        <CardTitle className="text-sm font-semibold tracking-tight flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            Email Draft
+        <CardTitle className="text-sm font-semibold tracking-tight flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <Mail className="h-4 w-4 flex-shrink-0" />
+            <span className="truncate">Email Draft</span>
           </div>
           {/* <Button
             variant="ghost"

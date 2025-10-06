@@ -113,7 +113,7 @@ export const StatementsSection = ({
 
   return (
     <Card
-      className={`mb-3 border border-gray-200 shadow-sm transition-colors ${
+      className={`border border-gray-200 shadow-sm transition-colors ${
         isDragging ? "border-blue-500 bg-blue-50" : ""
       }`}
       onDrop={handleDrop}
@@ -121,9 +121,9 @@ export const StatementsSection = ({
       onDragLeave={handleDragLeave}
     >
       <CardHeader className="p-3 pb-2">
-        <CardTitle className="text-sm font-semibold tracking-tight flex items-center justify-between">
-          Monthly Statements
-          <div className="flex gap-2">
+        <CardTitle className="text-sm font-semibold tracking-tight flex items-center justify-between gap-2 min-w-0">
+          <span className="truncate">Monthly Statements</span>
+          <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
             {deleteAllStatements && statements.length > 0 && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
