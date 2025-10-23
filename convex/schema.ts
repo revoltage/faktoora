@@ -42,6 +42,7 @@ const applicationTables = {
         }),
         parsing: v.object({
           parsedText: analysisResult,
+          parsedTables: analysisResult,
         }),
       })
     ),
