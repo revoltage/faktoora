@@ -3,7 +3,18 @@ import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
 const analysisResult = v.object({
-  value: v.union(v.string(), v.null()),
+  value: v.union(v.any(), v.null()),
+  error: v.union(v.string(), v.null()),
+  lastUpdated: v.union(v.number(), v.null()),
+});
+
+const paidItem = v.object({
+  description: v.string(),
+  amount: v.string(),
+});
+
+const paidItemsAnalysisResult = v.object({
+  value: v.union(v.array(paidItem), v.null()),
   error: v.union(v.string(), v.null()),
   lastUpdated: v.union(v.number(), v.null()),
 });
@@ -38,6 +49,7 @@ const applicationTables = {
           sender: analysisResult,
           parsedText: analysisResult,
           amount: analysisResult,
+          paidItems: paidItemsAnalysisResult,
           analysisBigError: v.union(v.string(), v.null()),
         }),
         parsing: v.object({
