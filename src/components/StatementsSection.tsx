@@ -208,49 +208,21 @@ export const StatementsSection = ({
             e.target.value = "";
           }}
         />
+        
         {statements.length === 0 ? (
           <p className="text-xs text-muted-foreground">
             No statements uploaded yet
           </p>
         ) : (
-          <div className="space-y-0">
-            {statements.map((statement) => (
-              <div
-                key={statement.storageId}
-                className="flex items-center justify-between py-0.5 border-t border-gray-100"
-              >
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <Badge className="uppercase text-[7px] bg-gray-200 text-gray-600 border-gray-200 px-1 py-0">
-                    {statement.fileType}
-                  </Badge>
-                  <a
-                    href={statement.url || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline truncate text-[9px]"
-                  >
-                    {statement.fileName}
-                  </a>
-                  <span className="text-[8px] text-muted-foreground whitespace-nowrap">
-                    {new Date(statement.uploadedAt).toISOString().split("T")[0]}
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-5 px-1.5 text-[8px] text-red-600 hover:text-red-700"
-                  onClick={() => {
-                    void deleteStatement({
-                      monthKey,
-                      storageId: statement.storageId,
-                    });
-                  }}
-                >
-                  Delete
-                </Button>
-              </div>
-            ))}
-          </div>
+          <StatementItem
+            statement={statements[0]}
+            onClickDelete={() => {
+              void deleteStatement({
+                monthKey,
+                storageId: statements[0].storageId,
+              });
+            }}
+          />
         )}
 
         {statements.length > 0 && (
@@ -263,3 +235,43 @@ export const StatementsSection = ({
     </Card>
   );
 };
+
+function StatementItem({
+  statement,
+  onClickDelete,
+}: {
+  statement: any;
+  onClickDelete: () => unknown;
+}) {
+  return (
+    <div
+      key={statement.storageId}
+      className="flex items-center justify-between py-0.5 border-t border-gray-100"
+    >
+      <div className="flex items-center gap-1.5 min-w-0">
+        <Badge className="uppercase text-[7px] bg-gray-200 text-gray-600 border-gray-200 px-1 py-0">
+          {statement.fileType}
+        </Badge>
+        <a
+          href={statement.url || "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline truncate text-[9px]"
+        >
+          {statement.fileName}
+        </a>
+        <span className="text-[8px] text-muted-foreground whitespace-nowrap">
+          {new Date(statement.uploadedAt).toISOString().split("T")[0]}
+        </span>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-5 px-1.5 text-[8px] text-red-600 hover:text-red-700"
+        onClick={onClickDelete}
+      >
+        Delete
+      </Button>
+    </div>
+  );
+}
