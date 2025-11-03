@@ -36,6 +36,11 @@ interface InvoiceListProps {
   onInvoiceClick: (invoice: any) => void;
   onUploadingStateChange: Dispatch<SetStateAction<UploadingInvoice[]>>;
   deleteAllInvoices?: any;
+  transactionInvoiceBindings: Array<{
+    transactionId: string;
+    invoiceStorageId: string | null;
+    boundAt: number;
+  }>;
 }
 
 const InvoiceSkeleton = ({ fileName }: { fileName: string }) => (
@@ -73,10 +78,31 @@ export const InvoiceList = ({
   onInvoiceClick,
   onUploadingStateChange,
   deleteAllInvoices,
+  transactionInvoiceBindings,
 }: InvoiceListProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
   const userSettings = useQuery(api.userSettings.getUserSettings);
+
+  // Create a set of bound invoice storage IDs
+  const boundInvoiceIds = new Set(
+    transactionInvoiceBindings
+      .map((binding) => binding.invoiceStorageId)
+      .filter((id): id is string => id !== null)
+  );
+
+  // Check if an invoice is bound
+  const isInvoiceBound = (invoice: any) => {
+    return boundInvoiceIds.has(invoice.storageId);
+  };
+
+  // Sort invoices: unbound first, then bound
+  const sortedInvoices = [...incomingInvoices].sort((a, b) => {
+    const aBound = isInvoiceBound(a);
+    const bBound = isInvoiceBound(b);
+    if (aBound === bBound) return 0;
+    return aBound ? 1 : -1;
+  });
 
   const formatMonthDisplay = (monthKey: string) => {
     const [year, month] = monthKey.split("-");
@@ -280,10 +306,14 @@ export const InvoiceList = ({
                 fileName={uploadingInvoice.fileName}
               />
             ))}
-            {incomingInvoices.map((invoice) => (
+            {sortedInvoices.map((invoice) => {
+              const isBound = isInvoiceBound(invoice);
+              return (
               <div
                 key={invoice.storageId}
-                className="flex items-center justify-between pt-0.5 pb-1 border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                className={`flex items-center justify-between pt-0.5 pb-1 border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
+                  isBound ? "opacity-60" : ""
+                }`}
                 onClick={() => onInvoiceClick(invoice)}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -292,7 +322,9 @@ export const InvoiceList = ({
                     {/* Main row: Sender + Date on left, Amount on right */}
                     <div className="flex items-center justify-between mb-0.5">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="text-xs font-medium text-blue-600 truncate">
+                        <span className={`text-xs font-medium truncate ${
+                          isBound ? "text-gray-500" : "text-blue-600"
+                        }`}>
                           {invoice.name ?? invoice.fileName}
                         </span>
 
@@ -462,7 +494,8 @@ export const InvoiceList = ({
                   </Button>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </CardContent>

@@ -201,6 +201,7 @@ export function InvoiceManagerPageContent({
         onInvoiceClick={openInvoiceModal}
         onUploadingStateChange={setUploadingInvoices}
         deleteAllInvoices={deleteAllInvoices}
+        transactionInvoiceBindings={monthData.transactionInvoiceBindings || []}
       />
       {/* Invoice Details Modal */}
       <InvoiceDetailsModal

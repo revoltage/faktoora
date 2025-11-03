@@ -90,6 +90,7 @@ export const getMonthData = query({
         monthKey: args.monthKey,
         incomingInvoices: [],
         statements: [],
+        transactionInvoiceBindings: [],
       };
     }
 
@@ -116,6 +117,7 @@ export const getMonthData = query({
       monthKey: args.monthKey,
       incomingInvoices: sortedInvoices,
       statements: statementsWithUrls,
+      transactionInvoiceBindings: monthData.transactionInvoiceBindings || [],
     };
   },
 });
@@ -715,13 +717,85 @@ export const getMergedTransactions = query({
     }
 
     // Sort by date (most recent first)
-    return allTransactions.sort((a, b) => {
+    const sortedTransactions = allTransactions.sort((a, b) => {
       const dateA = new Date(a.dateCompleted || a.dateStarted);
       const dateB = new Date(b.dateCompleted || b.dateStarted);
       return dateB.getTime() - dateA.getTime();
     });
+
+    // Get user settings for manual transactions
+    const userSettings = await ctx.db
+      .query("userSettings")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    // Parse and append manual transactions
+    if (userSettings?.manualTransactions) {
+      const manualTransactions = parseManualTransactions(
+        userSettings.manualTransactions,
+        bindingMap
+      );
+      sortedTransactions.push(...manualTransactions);
+    }
+
+    return sortedTransactions;
   },
 });
+
+function parseManualTransactions(
+  text: string,
+  bindingMap: Map<string, string | null>
+) {
+  const lines = text.split('\n').filter(line => line.trim());
+  const transactions = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const parts = line.split(',').map(p => p.trim());
+    const name = parts[0] || '';
+    const amount = parts[1] || '';
+
+    if (name) {
+      const id = `manual_transaction_${i}`;
+      transactions.push({
+        id,
+        dateStarted: '',
+        dateCompleted: '',
+        type: 'MANUAL',
+        state: '',
+        description: name,
+        reference: '',
+        payer: '',
+        cardNumber: '',
+        cardLabel: '',
+        cardState: '',
+        origCurrency: '',
+        origAmount: '',
+        paymentCurrency: '',
+        amount: amount || '',
+        totalAmount: '',
+        exchangeRate: '',
+        fee: '',
+        feeCurrency: '',
+        balance: '',
+        account: '',
+        beneficiaryAccountNumber: '',
+        beneficiarySortCode: '',
+        beneficiaryIban: '',
+        beneficiaryBic: '',
+        mcc: '',
+        relatedTransactionId: '',
+        spendProgram: '',
+        sourceFile: 'Manual',
+        boundInvoiceStorageId: bindingMap.get(id) || null,
+      });
+    }
+  }
+
+  return transactions;
+}
 
 export const deleteAllStatements = mutation({
   args: {

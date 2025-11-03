@@ -19,6 +19,7 @@ const cfg = {
   // Allowed transaction types (uncomment to allow more)
   allowedTransactionTypes: [
     "CARD_PAYMENT",
+    "MANUAL",
     // "FEE",
     // "EXCHANGE",
     // "TOPUP",
@@ -136,6 +137,8 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
         return "💰";
       case "FEE":
         return "📋";
+      case "MANUAL":
+        return "✏️";
       default:
         return "📄";
     }

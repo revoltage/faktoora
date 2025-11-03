@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -41,6 +42,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [vatId, setVatId] = useState("");
   const [accEmail, setAccEmail] = useState("");
   const [aiModel, setAiModel] = useState<keyof typeof AI_MODELS>("gemini");
+  const [manualTransactions, setManualTransactions] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const userSettings = useQuery(api.userSettings.getUserSettings);
@@ -51,6 +53,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setVatId(userSettings.vatId || "");
       setAccEmail(userSettings.accEmail || "");
       setAiModel((userSettings.aiModel as keyof typeof AI_MODELS) || "gemini");
+      setManualTransactions(userSettings.manualTransactions || "");
     }
   }, [userSettings]);
 
@@ -61,6 +64,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         vatId: vatId.trim() || undefined,
         aiModel: aiModel,
         accEmail: accEmail.trim() || undefined,
+        manualTransactions: manualTransactions.trim() || undefined,
       });
       toast.success("⚙️ Settings saved successfully");
       onClose();
@@ -78,6 +82,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setVatId(userSettings.vatId || "");
       setAccEmail(userSettings.accEmail || "");
       setAiModel((userSettings.aiModel as keyof typeof AI_MODELS) || "gemini");
+      setManualTransactions(userSettings.manualTransactions || "");
     }
     onClose();
   };
@@ -132,6 +137,23 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label htmlFor="manualTransactions" className="text-right pt-2">
+              Manual Transactions
+            </Label>
+            <div className="col-span-3">
+              <Textarea
+                id="manualTransactions"
+                value={manualTransactions}
+                onChange={(e) => setManualTransactions(e.target.value)}
+                placeholder="Name, Amount&#10;Name, Amount&#10;Name"
+                className="min-h-[100px] text-xs font-mono"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                One per line: name, amount (optional)
+              </p>
+            </div>
           </div>
         </div>
         <DialogFooter>
