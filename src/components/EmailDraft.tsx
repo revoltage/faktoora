@@ -135,7 +135,7 @@ export const EmailDraft = ({
   };
 
   return (
-    <Card className="border border-gray-200 shadow-sm">
+    <Card className="border border-gray-200 shadow-sm group">
       <CardHeader className="p-3 pb-2">
         <CardTitle className="text-sm font-semibold tracking-tight flex items-center justify-between gap-2 min-w-0">
           <div className="flex items-center gap-2 min-w-0">
@@ -169,7 +169,7 @@ export const EmailDraft = ({
         {/* Email Subject */}
         <div className="mb-1">
           <div 
-            className="text-[10px] text-muted-foreground font-[Arial, sans-serif] font-normal cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors border border-gray-200"
+            className="text-[10px] text-muted-foreground font-[Arial, sans-serif] font-semibold cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-t transition-colors border border-transparent group-hover:border-gray-200"
             onClick={handleCopySubject}
             title="Click to copy email subject"
           >
@@ -180,7 +180,7 @@ export const EmailDraft = ({
         {/* Email Body */}
         <div>
           <pre 
-            className="whitespace-pre-wrap text-[10px] text-muted-foreground font-[Arial, sans-serif] font-normal cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors border border-gray-200"
+            className="whitespace-pre-wrap text-[10px] text-muted-foreground font-[Arial, sans-serif] font-normal cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-b transition-colors border border-transparent group-hover:border-gray-200"
             onClick={handleCopyToClipboard}
             title="Click to copy email draft"
           >
