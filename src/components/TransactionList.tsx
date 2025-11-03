@@ -86,9 +86,12 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
       <div className="space-y-2">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-foreground tracking-tight">
-            📊 Transactions (0/{transactions.length})
+            📊 Transactions
           </h3>
           <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground">
+              (0/{transactions.length})
+            </span>
             <Button
               variant="outline"
               size="sm"
@@ -185,13 +188,16 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
     <div className="space-y-2">
       <div className="flex items-center justify-between mb-2 gap-2 min-w-0">
         <h3 className="text-sm font-semibold text-foreground tracking-tight truncate">
-          📊 Transactions ({displayTransactions.length}
-          {showFiltered && filteredTransactions.length !== transactions.length
-            ? `/${transactions.length}`
-            : ""}
-          )
+          📊 Transactions
         </h3>
         <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
+          <span className="text-[10px] text-muted-foreground">
+            ({displayTransactions.length}
+            {showFiltered && filteredTransactions.length !== transactions.length
+              ? `/${transactions.length}`
+              : ""}
+            )
+          </span>
           <Button
             variant="link"
             size="sm"
