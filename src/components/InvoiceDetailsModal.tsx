@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Download, ExternalLink } from "lucide-react";
+import { Download, ExternalLink, Edit } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -124,6 +124,20 @@ export const InvoiceDetailsModal = ({
     }
     
     window.open(invoice.url, "_blank");
+  };
+
+  const handleEditInSejda = () => {
+    if (!invoice.url) {
+      toast.error("❌ File URL not available");
+      return;
+    }
+    
+    const filesParam = JSON.stringify([{ downloadUrl: invoice.url }]);
+    const encodedParam = encodeURIComponent(filesParam);
+    const sejdaUrl = `https://www.sejda.com/pdf-editor?files=${encodedParam}`;
+    
+    window.open(sejdaUrl, "_blank");
+    toast.success("📝 Opening in Sejda editor");
   };
 
   return (
@@ -386,6 +400,14 @@ export const InvoiceDetailsModal = ({
             >
               <ExternalLink className="h-4 w-4" />
               View
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleEditInSejda}
+              className="gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              Edit
             </Button>
             <Button
               variant="secondary"
