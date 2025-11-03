@@ -59,31 +59,52 @@ export const EmailDraft = ({
     }
 
     try {
+      // Check for File System Access API support
+      if (!('showDirectoryPicker' in window)) {
+        toast.error("❌ Modern file access not supported in this browser");
+        return;
+      }
+
+      // Parse month info from monthKey
+      const [year, month] = monthKey.split("-");
+      const folderName = `Outgoing Docs - ${year}-${month}`;
+
+      toast.info(`📂 Choose a folder to save files to "${folderName}"...`);
+
+      // Request directory access
+      const dirHandle = await (window as any).showDirectoryPicker({
+        mode: 'readwrite'
+      });
+
+      // Get or create the subfolder
+      let subfolderHandle = await dirHandle.getDirectoryHandle(folderName, { create: true });
+
       toast.info(`📥 Downloading ${filesToDownload.length} files...`);
       
+      // Download all files to the subfolder
       for (const file of filesToDownload) {
         try {
           const response = await fetch(file.url);
           const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
           
-          const link = document.createElement("a");
-          link.href = blobUrl;
-          link.download = file.fileName || "file.pdf";
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          URL.revokeObjectURL(blobUrl);
+          // Create a file in the subfolder
+          const fileHandle = await subfolderHandle.getFileHandle(file.fileName || "file.pdf", { create: true });
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
         } catch (error) {
           console.error(`Failed to download ${file.fileName}:`, error);
         }
       }
       
       toast.success("✅ All files downloaded successfully");
-    } catch (error) {
-      toast.error("❌ Failed to download all files");
-      console.error("Download all error:", error);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        toast.info("💭 Download cancelled");
+      } else {
+        toast.error("❌ Failed to download all files");
+        console.error("Download all error:", error);
+      }
     }
   };
 
