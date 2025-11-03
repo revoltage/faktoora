@@ -39,6 +39,7 @@ const AI_MODELS = {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [vatId, setVatId] = useState("");
+  const [accEmail, setAccEmail] = useState("");
   const [aiModel, setAiModel] = useState<keyof typeof AI_MODELS>("gemini");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -48,6 +49,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   useEffect(() => {
     if (userSettings) {
       setVatId(userSettings.vatId || "");
+      setAccEmail(userSettings.accEmail || "");
       setAiModel((userSettings.aiModel as keyof typeof AI_MODELS) || "gemini");
     }
   }, [userSettings]);
@@ -58,6 +60,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       await updateUserSettings({
         vatId: vatId.trim() || undefined,
         aiModel: aiModel,
+        accEmail: accEmail.trim() || undefined,
       });
       toast.success("⚙️ Settings saved successfully");
       onClose();
@@ -73,6 +76,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     // Reset to original values
     if (userSettings) {
       setVatId(userSettings.vatId || "");
+      setAccEmail(userSettings.accEmail || "");
       setAiModel((userSettings.aiModel as keyof typeof AI_MODELS) || "gemini");
     }
     onClose();
@@ -98,6 +102,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               onChange={(e) => setVatId(e.target.value)}
               className="col-span-3"
               placeholder="Enter your VAT ID"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="accEmail" className="text-right">
+              Account Email
+            </Label>
+            <Input
+              id="accEmail"
+              value={accEmail}
+              onChange={(e) => setAccEmail(e.target.value)}
+              className="col-span-3"
+              placeholder="Email for Gmail compose"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">

@@ -14,6 +14,7 @@ const applicationTables = {
     userId: v.id("users"),
     vatId: v.optional(v.string()),
     aiModel: v.optional(v.string()),
+    accEmail: v.optional(v.string()),
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"]),

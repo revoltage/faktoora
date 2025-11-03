@@ -1,9 +1,10 @@
-import { Copy, Mail, Download } from "lucide-react";
+import { useQuery } from "convex/react";
+import { Copy, Mail, Download, Send } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "../../convex/_generated/api";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "./ui/separator";
 
 interface EmailDraftProps {
   invoices: any[];
@@ -18,6 +19,8 @@ export const EmailDraft = ({
   monthKey,
   uploadingInvoices = [],
 }: EmailDraftProps) => {
+  const userSettings = useQuery(api.userSettings.getUserSettings);
+  
   // Create email draft content and subject
   const { emailContent, emailSubject } = createEmailContent(invoices, statements, monthKey);
 
@@ -45,6 +48,17 @@ export const EmailDraft = ({
       .catch(() => {
         toast.error("Failed to copy email subject");
       });
+  };
+
+  const handleOpenGmail = () => {
+    const subject = encodeURIComponent(emailSubject);
+    const body = encodeURIComponent(emailContent);
+    const to = userSettings?.accEmail ? encodeURIComponent(userSettings.accEmail) : "";
+    const gmailUrl = to 
+      ? `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`
+      : `https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`;
+    window.open(gmailUrl, "_blank");
+    toast.success("✉️ Opening Gmail compose");
   };
 
   const handleDownloadAll = async () => {
@@ -128,15 +142,26 @@ export const EmailDraft = ({
             <Mail className="h-4 w-4 flex-shrink-0" />
             <span className="truncate">Email Draft</span>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 px-2 text-xs gap-1.5"
-            onClick={() => void handleDownloadAll()}
-          >
-            <Download className="h-3 w-3" />
-            Download All
-          </Button>
+          <div className="flex gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 text-xs gap-1.5"
+              onClick={() => void handleDownloadAll()}
+            >
+              <Download className="h-3 w-3" />
+              Download All
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              className="h-7 px-2 text-xs gap-1.5"
+              onClick={handleOpenGmail}
+            >
+              <Send className="h-3 w-3" />
+              Gmail
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-3 pt-0">
