@@ -13,11 +13,9 @@ export function TransactionListFooter({
     <div className="flex items-center justify-between text-[8px] text-muted-foreground italic">
       <span>Merged from CSV statements</span>
       <span className="not-italic">
-        ({displayCount}
         {showFiltered && totalCount !== undefined
-          ? `/${totalCount}`
-          : ""}
-        )
+          ? `showing ${displayCount}/${totalCount}`
+          : `total ${displayCount}`}
       </span>
     </div>
   );
