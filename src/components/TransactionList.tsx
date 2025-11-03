@@ -6,6 +6,7 @@ import { api } from "../../convex/_generated/api";
 
 import { TransactionDetailsModal } from "@/components/TransactionDetailsModal";
 import { TransactionInvoiceBindingModal } from "@/components/TransactionInvoiceBindingModal";
+import { TransactionListFooter } from "@/components/TransactionListFooter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getInvoiceHelperLinks } from "@/lib/transactionHelperLinks";
@@ -89,9 +90,6 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
             📊 Transactions
           </h3>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-muted-foreground">
-              (0/{transactions.length})
-            </span>
             <Button
               variant="outline"
               size="sm"
@@ -100,14 +98,16 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
             >
               Show All
             </Button>
-            <div className="text-[11px] text-muted-foreground">
-              Merged from CSV statements
-            </div>
           </div>
         </div>
         <div className="text-gray-500 text-sm py-4">
           📊 No transactions need invoices (all filtered out)
         </div>
+        <TransactionListFooter
+          displayCount={0}
+          totalCount={transactions.length}
+          showFiltered={true}
+        />
       </div>
     );
   }
@@ -191,13 +191,6 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
           📊 Transactions
         </h3>
         <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
-          <span className="text-[10px] text-muted-foreground">
-            ({displayTransactions.length}
-            {showFiltered && filteredTransactions.length !== transactions.length
-              ? `/${transactions.length}`
-              : ""}
-            )
-          </span>
           <Button
             variant="link"
             size="sm"
@@ -323,9 +316,11 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
         })}
       </div>
 
-      <div className="text-[8px] text-muted-foreground italic">
-        Merged from CSV statements
-      </div>
+      <TransactionListFooter
+        displayCount={displayTransactions.length}
+        totalCount={showFiltered ? transactions.length : undefined}
+        showFiltered={showFiltered && filteredTransactions.length !== transactions.length}
+      />
 
       <TransactionDetailsModal
         transaction={selectedTransaction}
