@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { checkVatIdInText } from "@/lib/vatIdChecker";
+import { cn } from "@/lib/utils";
 
 interface UploadingInvoice {
   fileName: string;
@@ -44,7 +45,7 @@ interface InvoiceListProps {
 }
 
 const InvoiceSkeleton = ({ fileName }: { fileName: string }) => (
-  <div className="flex items-center justify-between pt-0.5 pb-1 border-t border-gray-100 hover:bg-gray-50 transition-colors opacity-60">
+  <div className="flex items-center justify-between pt-0.5 pb-1 hover:bg-gray-50 transition-colors opacity-60">
     <div className="flex items-center gap-2 flex-1 min-w-0">
       <span className="text-base flex-shrink-0">📄</span>
       <div className="flex-1 min-w-0">
@@ -198,8 +199,9 @@ export const InvoiceList = ({
     }
 
     // Use classic parsing first, fallback to AI analysis
-    const parsedText = invoice.parsing.parsedText.value || invoice.analysis.parsedText.value;
-    
+    const parsedText =
+      invoice.parsing.parsedText.value || invoice.analysis.parsedText.value;
+
     if (!parsedText) {
       return <span className="text-[9px] text-gray-400">No parsed text</span>;
     }
@@ -309,192 +311,218 @@ export const InvoiceList = ({
             {sortedInvoices.map((invoice) => {
               const isBound = isInvoiceBound(invoice);
               return (
-              <div
-                key={invoice.storageId}
-                className={`flex items-center justify-between pt-0.5 pb-1 border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
-                  isBound ? "opacity-60" : ""
-                }`}
-                onClick={() => onInvoiceClick(invoice)}
-              >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className="text-base flex-shrink-0">📄</span>
-                  <div className="flex-1 min-w-0">
-                    {/* Main row: Sender + Date on left, Amount on right */}
-                    <div className="flex items-center justify-between mb-0.5">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className={`text-xs font-medium truncate ${
-                          isBound ? "text-gray-500" : "text-blue-600"
-                        }`}>
-                          {invoice.name ?? invoice.fileName}
-                        </span>
-
-                        <span className="text-[9px] text-muted-foreground whitespace-nowrap">
-                          {invoice.analysis.date.error ? (
-                            <span
-                              className="text-red-600 cursor-pointer"
-                              onClick={() =>
-                                console.error(
-                                  "🔍 Date Analysis Error:",
-                                  invoice.analysis.date.error
-                                )
-                              }
-                            >
-                              <CircleAlertIcon className="inline-block w-2.5 h-2.5 text-red-600" />
-                            </span>
-                          ) : invoice.analysis.date.value ? (
-                            formatInvoiceDate(invoice.analysis.date.value)
-                          ) : invoice.analysis.date.lastUpdated === null ? (
-                            <span className="text-yellow-600 animate-pulse">
-                              Analyzing date...
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">N/A</span>
-                          )}
-                        </span>
-
-                        <span className="text-[9px]">
-                          {invoice.analysis.sender.error ? (
-                            <span
-                              className="text-red-600 cursor-pointer"
-                              onClick={() =>
-                                console.error(
-                                  "🔍 Sender Analysis Error:",
-                                  invoice.analysis.sender.error
-                                )
-                              }
-                            >
-                              <CircleAlertIcon className="inline-block w-2.5 h-2.5 text-red-600" />
-                            </span>
-                          ) : invoice.analysis.sender.value ? (
-                            <>
-                              {/* <CheckIcon className="inline-block w-3 h-3 text-green-600" /> */}
-                            </>
-                          ) : // invoice.analysis.sender.value
-                          invoice.analysis.sender.lastUpdated === null ? (
-                            <span className="text-yellow-600 animate-pulse">
-                              Analyzing sender...
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">N/A</span>
-                          )}
-                        </span>
-                      </div>
-                      <span className="text-xs font-medium text-green-700 whitespace-nowrap ml-2">
-                        {invoice.analysis.amount.error ? (
+                <div
+                  key={invoice.storageId}
+                  className={cn(
+                    "flex items-center justify-between pt-0.5 pb-1 hover:bg-gray-50 transition-colors cursor-pointer",
+                    "-mx-2 px-1 rounded-lg",
+                    isBound && "opacity-60"
+                  )}
+                  onClick={() => onInvoiceClick(invoice)}
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-base flex-shrink-0">📄</span>
+                    <div className="flex-1 min-w-0">
+                      {/* Main row: Sender + Date on left, Amount on right */}
+                      <div className="flex items-center justify-between mb-0.5">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
                           <span
-                            className="text-red-600 cursor-pointer"
-                            onClick={() =>
-                              console.error(
-                                "💰 Amount Analysis Error:",
-                                invoice.analysis.amount.error
-                              )
-                            }
+                            className={`text-xs font-medium truncate ${
+                              isBound ? "text-gray-500" : "text-blue-600"
+                            }`}
                           >
-                            ERROR
+                            {invoice.name ?? invoice.fileName}
                           </span>
-                        ) : invoice.analysis.amount.value ? (
-                          invoice.analysis.amount.value.replace("|", " ")
-                        ) : invoice.analysis.amount.lastUpdated === null ? (
-                          <span className="text-yellow-600 animate-pulse">
-                            Analyzing amount...
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">N/A</span>
-                        )}
-                      </span>
-                    </div>
 
-                    {/* Tiny row: Filename + Uploaded at + Parse status on left, VAT Status on right */}
-                    <div className="flex items-center justify-between text-[9px] text-muted-foreground">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="truncate">{invoice.fileName}</span>
-                        <span>•</span>
-                        <span className="whitespace-nowrap">{formatInvoiceDate(invoice.uploadedAt)}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          {/* Classic Parsing Status */}
-                          <span>
-                            {invoice.parsing.parsedText.error ? (
+                          <span className="text-[9px] text-muted-foreground whitespace-nowrap">
+                            {invoice.analysis.date.error ? (
                               <span
                                 className="text-red-600 cursor-pointer"
                                 onClick={() =>
                                   console.error(
-                                    "📝 Classic Parsing Error:",
-                                    invoice.parsing.parsedText.error
+                                    "🔍 Date Analysis Error:",
+                                    invoice.analysis.date.error
                                   )
                                 }
-                                title={`Classic Error: ${invoice.parsing.parsedText.error}`}
                               >
-                                C✗
+                                <CircleAlertIcon className="inline-block w-2.5 h-2.5 text-red-600" />
                               </span>
-                            ) : invoice.parsing.parsedText.lastUpdated === null ? (
-                              <span className="text-yellow-600 animate-pulse" title="Classic parsing...">
-                                C⏳
-                              </span>
-                            ) : invoice.parsing.parsedText.value ? (
-                              <span className="text-blue-600" title="Classic parsing complete">
-                                C✓
+                            ) : invoice.analysis.date.value ? (
+                              formatInvoiceDate(invoice.analysis.date.value)
+                            ) : invoice.analysis.date.lastUpdated === null ? (
+                              <span className="text-yellow-600 animate-pulse">
+                                Analyzing date...
                               </span>
                             ) : (
-                              <span className="text-gray-400" title="Classic parsing not started">
-                                C-
-                              </span>
+                              <span className="text-gray-400">N/A</span>
                             )}
                           </span>
 
-                          {/* AI Parsing Status */}
-                          <span>
-                            {invoice.analysis.parsedText.error ? (
+                          <span className="text-[9px]">
+                            {invoice.analysis.sender.error ? (
                               <span
                                 className="text-red-600 cursor-pointer"
                                 onClick={() =>
                                   console.error(
-                                    "📝 AI Parsing Error:",
-                                    invoice.analysis.parsedText.error
+                                    "🔍 Sender Analysis Error:",
+                                    invoice.analysis.sender.error
                                   )
                                 }
-                                title={`AI Error: ${invoice.analysis.parsedText.error}`}
                               >
-                                A✗
+                                <CircleAlertIcon className="inline-block w-2.5 h-2.5 text-red-600" />
                               </span>
-                            ) : invoice.analysis.parsedText.lastUpdated === null ? (
-                              <span className="text-yellow-600 animate-pulse" title="AI parsing...">
-                                A⏳
-                              </span>
-                            ) : invoice.analysis.parsedText.value ? (
-                              <span className="text-green-600" title="AI parsing complete">
-                                A✓
+                            ) : invoice.analysis.sender.value ? (
+                              <>
+                                {/* <CheckIcon className="inline-block w-3 h-3 text-green-600" /> */}
+                              </>
+                            ) : // invoice.analysis.sender.value
+                            invoice.analysis.sender.lastUpdated === null ? (
+                              <span className="text-yellow-600 animate-pulse">
+                                Analyzing sender...
                               </span>
                             ) : (
-                              <span className="text-gray-400" title="AI parsing not started">
-                                A-
-                              </span>
+                              <span className="text-gray-400">N/A</span>
                             )}
                           </span>
+                        </div>
+                        <span className="text-xs font-medium text-green-700 whitespace-nowrap ml-2">
+                          {invoice.analysis.amount.error ? (
+                            <span
+                              className="text-red-600 cursor-pointer"
+                              onClick={() =>
+                                console.error(
+                                  "💰 Amount Analysis Error:",
+                                  invoice.analysis.amount.error
+                                )
+                              }
+                            >
+                              ERROR
+                            </span>
+                          ) : invoice.analysis.amount.value ? (
+                            invoice.analysis.amount.value.replace("|", " ")
+                          ) : invoice.analysis.amount.lastUpdated === null ? (
+                            <span className="text-yellow-600 animate-pulse">
+                              Analyzing amount...
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">N/A</span>
+                          )}
                         </span>
                       </div>
-                      <div className="ml-2">{renderVatIdStatus(invoice)}</div>
+
+                      {/* Tiny row: Filename + Uploaded at + Parse status on left, VAT Status on right */}
+                      <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="truncate">{invoice.fileName}</span>
+                          <span>•</span>
+                          <span className="whitespace-nowrap">
+                            {formatInvoiceDate(invoice.uploadedAt)}
+                          </span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1">
+                            {/* Classic Parsing Status */}
+                            <span>
+                              {invoice.parsing.parsedText.error ? (
+                                <span
+                                  className="text-red-600 cursor-pointer"
+                                  onClick={() =>
+                                    console.error(
+                                      "📝 Classic Parsing Error:",
+                                      invoice.parsing.parsedText.error
+                                    )
+                                  }
+                                  title={`Classic Error: ${invoice.parsing.parsedText.error}`}
+                                >
+                                  C✗
+                                </span>
+                              ) : invoice.parsing.parsedText.lastUpdated ===
+                                null ? (
+                                <span
+                                  className="text-yellow-600 animate-pulse"
+                                  title="Classic parsing..."
+                                >
+                                  C⏳
+                                </span>
+                              ) : invoice.parsing.parsedText.value ? (
+                                <span
+                                  className="text-blue-600"
+                                  title="Classic parsing complete"
+                                >
+                                  C✓
+                                </span>
+                              ) : (
+                                <span
+                                  className="text-gray-400"
+                                  title="Classic parsing not started"
+                                >
+                                  C-
+                                </span>
+                              )}
+                            </span>
+
+                            {/* AI Parsing Status */}
+                            <span>
+                              {invoice.analysis.parsedText.error ? (
+                                <span
+                                  className="text-red-600 cursor-pointer"
+                                  onClick={() =>
+                                    console.error(
+                                      "📝 AI Parsing Error:",
+                                      invoice.analysis.parsedText.error
+                                    )
+                                  }
+                                  title={`AI Error: ${invoice.analysis.parsedText.error}`}
+                                >
+                                  A✗
+                                </span>
+                              ) : invoice.analysis.parsedText.lastUpdated ===
+                                null ? (
+                                <span
+                                  className="text-yellow-600 animate-pulse"
+                                  title="AI parsing..."
+                                >
+                                  A⏳
+                                </span>
+                              ) : invoice.analysis.parsedText.value ? (
+                                <span
+                                  className="text-green-600"
+                                  title="AI parsing complete"
+                                >
+                                  A✓
+                                </span>
+                              ) : (
+                                <span
+                                  className="text-gray-400"
+                                  title="AI parsing not started"
+                                >
+                                  A-
+                                </span>
+                              )}
+                            </span>
+                          </span>
+                        </div>
+                        <div className="ml-2">{renderVatIdStatus(invoice)}</div>
+                      </div>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="!h-4 !w-4 p-0 mr-1 text-gray-400 hover:text-gray-600 rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void deleteIncomingInvoice({
+                          monthKey,
+                          storageId: invoice.storageId,
+                        });
+                      }}
+                    >
+                      <XIcon className="!h-2.5 !w-2.5" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="!h-4 !w-4 p-0 mr-1 text-gray-400 hover:text-gray-600 rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void deleteIncomingInvoice({
-                        monthKey,
-                        storageId: invoice.storageId,
-                      });
-                    }}
-                  >
-                    <XIcon className="!h-2.5 !w-2.5" />
-                  </Button>
-                </div>
-              </div>
-            );
+              );
             })}
           </div>
         )}

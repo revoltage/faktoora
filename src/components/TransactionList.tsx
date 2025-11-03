@@ -210,7 +210,7 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
           return (
             <div
               key={`${transaction.id}-${index}`}
-              className="flex items-center justify-between py-1 border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+              className="flex items-center justify-between py-1 hover:bg-gray-50 transition-colors cursor-pointer -mx-2 pl-2 rounded-lg"
               onClick={() => handleTransactionClick(transaction)}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
