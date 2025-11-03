@@ -69,7 +69,7 @@ export const EmailDraft = ({
       const [year, month] = monthKey.split("-");
       const folderName = `Outgoing Docs - ${year}-${month}`;
 
-      toast.info(`📂 Choose a folder to save files to "${folderName}"...`);
+      toast.info(`📂 Choose a parent folder...`);
 
       // Request directory access
       const dirHandle = await (window as any).showDirectoryPicker({
@@ -97,7 +97,7 @@ export const EmailDraft = ({
         }
       }
       
-      toast.success("✅ All files downloaded successfully");
+      toast.success(`✅ All files saved to "${folderName}"`);
     } catch (error: any) {
       if (error.name === 'AbortError') {
         toast.info("💭 Download cancelled");
