@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { Download } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -88,6 +89,21 @@ export const InvoiceDetailsModal = ({
   const handleCancelEdit = () => {
     setEditedName(invoice.name || "");
     setIsEditingName(false);
+  };
+
+  const handleDownload = () => {
+    if (!invoice.url) {
+      toast.error("❌ File URL not available");
+      return;
+    }
+    
+    const link = document.createElement("a");
+    link.href = invoice.url;
+    link.download = invoice.fileName || "invoice.pdf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("⬇️ Download started");
   };
 
   return (
@@ -342,6 +358,14 @@ export const InvoiceDetailsModal = ({
           <div className="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" onClick={onClose}>
               Close
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleDownload}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download
             </Button>
             <Button
               variant="destructive"
