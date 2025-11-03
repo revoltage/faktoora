@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Download } from "lucide-react";
+import { Download, ExternalLink } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -91,19 +91,39 @@ export const InvoiceDetailsModal = ({
     setIsEditingName(false);
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!invoice.url) {
       toast.error("❌ File URL not available");
       return;
     }
     
-    const link = document.createElement("a");
-    link.href = invoice.url;
-    link.download = invoice.fileName || "invoice.pdf";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("⬇️ Download started");
+    try {
+      const response = await fetch(invoice.url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = invoice.fileName || "invoice.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(blobUrl);
+      toast.success("⬇️ Download started");
+    } catch (error) {
+      toast.error("❌ Failed to download file");
+      console.error("Download error:", error);
+    }
+  };
+
+  const handleView = () => {
+    if (!invoice.url) {
+      toast.error("❌ File URL not available");
+      return;
+    }
+    
+    window.open(invoice.url, "_blank");
   };
 
   return (
@@ -361,7 +381,15 @@ export const InvoiceDetailsModal = ({
             </Button>
             <Button
               variant="secondary"
-              onClick={handleDownload}
+              onClick={handleView}
+              className="gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              View
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => void handleDownload()}
               className="gap-2"
             >
               <Download className="h-4 w-4" />
