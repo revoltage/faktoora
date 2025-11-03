@@ -84,7 +84,7 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
     return (
       <div className='space-y-2'>
         <div className='flex items-center justify-between mb-2'>
-          <h3 className='text-sm font-semibold text-foreground tracking-tight'>Transactions</h3>
+          <h4 className='text-sm font-semibold text-foreground tracking-tight'>Transactions</h4>
           <div className='flex items-center gap-2'>
             <Button
               variant='outline'
@@ -96,9 +96,7 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
             </Button>
           </div>
         </div>
-        <div className='text-gray-500 text-sm py-4'>
-          📊 No transactions need invoices (all filtered out)
-        </div>
+        <div className='text-gray-500 text-sm py-4'>No transactions need invoices</div>
         <TransactionListFooter
           displayCount={0}
           totalCount={transactions.length}
@@ -181,9 +179,9 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
   return (
     <div className='space-y-2'>
       <div className='flex items-center justify-between mb-2 gap-2 min-w-0'>
-        <h3 className='text-sm font-semibold text-foreground tracking-tight truncate'>
-          📊 Transactions
-        </h3>
+        <h4 className='text-sm font-semibold text-foreground tracking-tight truncate'>
+          Transactions
+        </h4>
         <div className='flex flex-wrap items-center justify-end gap-1 sm:gap-2'>
           <Button
             variant='link'
