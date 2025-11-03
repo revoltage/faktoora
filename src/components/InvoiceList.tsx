@@ -132,7 +132,12 @@ export const InvoiceList = ({
     setIsDragging(false);
     const files = Array.from(e.dataTransfer.files);
     for (const file of files) {
-      if (file.type === "application/pdf") {
+      if (
+        file.type === "application/pdf" ||
+        file.type === "image/png" ||
+        file.type === "image/jpeg" ||
+        file.type === "image/webp"
+      ) {
         void handleUploadInvoice(file);
       }
     }
@@ -252,7 +257,7 @@ export const InvoiceList = ({
         <input
           ref={invoiceInputRef}
           type="file"
-          accept=".pdf"
+          accept=".pdf,.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
           multiple
           className="hidden"
           onChange={(e) => {

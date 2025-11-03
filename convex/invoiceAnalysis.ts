@@ -50,9 +50,9 @@ export const analyzeInvoice = internalAction({
         return;
       }
 
-      const pdfUrl = await ctx.storage.getUrl(args.storageId);
-      if (!pdfUrl) {
-        throw new Error("📄 PDF not found in storage");
+      const fileUrl = await ctx.storage.getUrl(args.storageId);
+      if (!fileUrl) {
+        throw new Error("📄 File not found in storage");
       }
 
       // Get user's AI model preference
@@ -66,12 +66,15 @@ export const analyzeInvoice = internalAction({
         (userSettings?.aiModel as keyof typeof AI_MODELS) || "gemini";
       console.log(`🤖 Using AI model: ${modelKey} for user ${args.userId}`);
 
-      const response = await fetch(pdfUrl);
-      const pdfBlob = await response.blob();
-      const pdfBuffer = await pdfBlob.arrayBuffer();
+      const response = await fetch(fileUrl);
+      const fileBlob = await response.blob();
+      const fileBuffer = await fileBlob.arrayBuffer();
+      
+      const fileType = detectFileType(fileBuffer);
+      console.log(`📎 Detected file type: ${fileType}`);
 
       // Start all extractions in parallel but handle each individually
-      const datePromise = extractInvoiceDate(pdfBuffer, modelKey).then(
+      const datePromise = extractInvoiceDate(fileBuffer, modelKey).then(
         async (dateResult) => {
           await ctx.runMutation(internal.invoices.updateInvoiceDate, {
             monthKey: args.monthKey,
@@ -83,7 +86,7 @@ export const analyzeInvoice = internalAction({
         }
       );
 
-      const senderPromise = extractInvoiceSender(pdfBuffer, modelKey).then(
+      const senderPromise = extractInvoiceSender(fileBuffer, modelKey).then(
         async (senderResult) => {
           await ctx.runMutation(internal.invoices.updateInvoiceSender, {
             monthKey: args.monthKey,
@@ -95,7 +98,7 @@ export const analyzeInvoice = internalAction({
         }
       );
 
-      const parsedTextPromise = extractTextFromPDF(pdfBuffer, modelKey).then(
+      const parsedTextPromise = extractTextFromPDF(fileBuffer, modelKey).then(
         async (parsedTextResult) => {
           await ctx.runMutation(internal.invoices.updateInvoiceParsedText, {
             monthKey: args.monthKey,
@@ -107,7 +110,7 @@ export const analyzeInvoice = internalAction({
         }
       );
 
-      const amountPromise = extractInvoiceAmount(pdfBuffer, modelKey).then(
+      const amountPromise = extractInvoiceAmount(fileBuffer, modelKey).then(
         async (amountResult) => {
           await ctx.runMutation(internal.invoices.updateInvoiceAmount, {
             monthKey: args.monthKey,
@@ -149,9 +152,39 @@ const AI_MODELS = {
   gemini: google("gemini-2.5-flash"),
 } as const;
 
+function detectFileType(buffer: ArrayBuffer): string {
+  const arr = new Uint8Array(buffer).subarray(0, 12);
+  
+  // PDF: %PDF
+  if (arr[0] === 0x25 && arr[1] === 0x50 && arr[2] === 0x44 && arr[3] === 0x46) {
+    return "application/pdf";
+  }
+  
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (arr[0] === 0x89 && arr[1] === 0x50 && arr[2] === 0x4E && arr[3] === 0x47) {
+    return "image/png";
+  }
+  
+  // JPEG: FF D8 FF
+  if (arr[0] === 0xFF && arr[1] === 0xD8 && arr[2] === 0xFF) {
+    return "image/jpeg";
+  }
+  
+  // WEBP: RIFF ... WEBP
+  if (
+    arr[0] === 0x52 && arr[1] === 0x49 && arr[2] === 0x46 && arr[3] === 0x46 &&
+    arr[8] === 0x57 && arr[9] === 0x45 && arr[10] === 0x42 && arr[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+  
+  // Default to PDF if unknown
+  return "application/pdf";
+}
+
 async function askLLM(
   prompt: string,
-  pdfBuffer: ArrayBuffer,
+  fileBuffer: ArrayBuffer,
   modelKey: keyof typeof AI_MODELS = "gemini"
 ): Promise<{
   value: string | null;
@@ -160,6 +193,8 @@ async function askLLM(
 }> {
   const now = Date.now();
   try {
+    const mediaType = detectFileType(fileBuffer);
+    
     const result = await generateText({
       model: AI_MODELS[modelKey],
       messages: [
@@ -172,8 +207,8 @@ async function askLLM(
             },
             {
               type: "file",
-              data: Buffer.from(pdfBuffer),
-              mediaType: "application/pdf",
+              data: Buffer.from(fileBuffer),
+              mediaType,
             },
           ],
         },
@@ -197,7 +232,7 @@ async function askLLM(
 }
 
 async function extractInvoiceDate(
-  pdfBuffer: ArrayBuffer,
+  fileBuffer: ArrayBuffer,
   modelKey: keyof typeof AI_MODELS = "gemini"
 ): Promise<{
   value: string | null;
@@ -205,14 +240,14 @@ async function extractInvoiceDate(
   lastUpdated: number;
 }> {
   return await askLLM(
-    "Extract the invoice issue date from this PDF. Return ONLY the date in YYYY-MM-DD format, or 'null' if no date is found. Do not include any other text.",
-    pdfBuffer,
+    "Extract the invoice issue date from this document. Return ONLY the date in YYYY-MM-DD format, or 'null' if no date is found. Do not include any other text.",
+    fileBuffer,
     modelKey
   );
 }
 
 async function extractInvoiceSender(
-  pdfBuffer: ArrayBuffer,
+  fileBuffer: ArrayBuffer,
   modelKey: keyof typeof AI_MODELS = "gemini"
 ): Promise<{
   value: string | null;
@@ -220,14 +255,14 @@ async function extractInvoiceSender(
   lastUpdated: number;
 }> {
   return await askLLM(
-    "Extract the sender/vendor name from this invoice PDF. Return ONLY the company or person name, or 'null' if not found. Do not include any other text.",
-    pdfBuffer,
+    "Extract the sender/vendor name from this invoice document. Return ONLY the company or person name, or 'null' if not found. Do not include any other text.",
+    fileBuffer,
     modelKey
   );
 }
 
 async function extractTextFromPDF(
-  pdfBuffer: ArrayBuffer,
+  fileBuffer: ArrayBuffer,
   modelKey: keyof typeof AI_MODELS = "gemini"
 ): Promise<{
   value: string | null;
@@ -235,14 +270,14 @@ async function extractTextFromPDF(
   lastUpdated: number;
 }> {
   return await askLLM(
-    "Extract all text content from this PDF document. Return the complete text as plain markdown, preserving line breaks and structure. If the document contains no readable text, return 'null'.",
-    pdfBuffer,
+    "Extract all text content from this document. Return the complete text as plain markdown, preserving line breaks and structure. If the document contains no readable text, return 'null'.",
+    fileBuffer,
     modelKey
   );
 }
 
 async function extractInvoiceAmount(
-  pdfBuffer: ArrayBuffer,
+  fileBuffer: ArrayBuffer,
   modelKey: keyof typeof AI_MODELS = "gemini"
 ): Promise<{
   value: string | null;
@@ -250,8 +285,8 @@ async function extractInvoiceAmount(
   lastUpdated: number;
 }> {
   return await askLLM(
-    "Extract the total invoice amount and currency from this PDF. Return ONLY the amount and currency in the format 'amount|currency' (e.g., '50.80|BGN', '10000|USD', '4.51|EUR'). If no amount is found, return 'null'. Do not include any other text.",
-    pdfBuffer,
+    "Extract the total invoice amount and currency from this document. Return ONLY the amount and currency in the format 'amount|currency' (e.g., '50.80|BGN', '10000|USD', '4.51|EUR'). If no amount is found, return 'null'. Do not include any other text.",
+    fileBuffer,
     modelKey
   );
 }
