@@ -1,4 +1,4 @@
-import { Copy, Mail } from "lucide-react";
+import { Copy, Mail, Download } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,46 @@ export const EmailDraft = ({
       });
   };
 
+  const handleDownloadAll = async () => {
+    const filesToDownload = [
+      ...statements.filter(s => s.url),
+      ...invoices.filter(i => i.url)
+    ];
+
+    if (filesToDownload.length === 0) {
+      toast.error("❌ No files available to download");
+      return;
+    }
+
+    try {
+      toast.info(`📥 Downloading ${filesToDownload.length} files...`);
+      
+      for (const file of filesToDownload) {
+        try {
+          const response = await fetch(file.url);
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          
+          const link = document.createElement("a");
+          link.href = blobUrl;
+          link.download = file.fileName || "file.pdf";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+          console.error(`Failed to download ${file.fileName}:`, error);
+        }
+      }
+      
+      toast.success("✅ All files downloaded successfully");
+    } catch (error) {
+      toast.error("❌ Failed to download all files");
+      console.error("Download all error:", error);
+    }
+  };
+
   const renderUploadingInvoices = () => {
     // renders • ${uploadingInvoice.fileName} (uploading...)\n for each uploading invoice
     return uploadingInvoices.map((uploadingInvoice) => (
@@ -67,15 +107,15 @@ export const EmailDraft = ({
             <Mail className="h-4 w-4 flex-shrink-0" />
             <span className="truncate">Email Draft</span>
           </div>
-          {/* <Button
-            variant="ghost"
+          <Button
+            variant="outline"
             size="sm"
-            className="h-5 px-2 text-[10px] gap-1"
-            onClick={handleCopyToClipboard}
+            className="h-7 px-2 text-xs gap-1.5"
+            onClick={() => void handleDownloadAll()}
           >
-            <Copy className="!h-2 !w-2" />
-            Copy
-          </Button> */}
+            <Download className="h-3 w-3" />
+            Download All
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-3 pt-0">
