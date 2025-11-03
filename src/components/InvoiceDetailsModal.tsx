@@ -46,8 +46,15 @@ export const InvoiceDetailsModal = ({
     });
   };
 
-  const getStatusBadge = (analysis: any, field: string) => {
-    const fieldData = analysis[field];
+  const getStatusBadge = (section: any, field: string) => {
+    const fieldData = section?.[field];
+    if (!fieldData) {
+      return (
+        <Badge variant="outline" className="text-xs">
+          N/A
+        </Badge>
+      );
+    }
     if (fieldData.error) {
       return (
         <Badge variant="destructive" className="text-xs">
@@ -75,6 +82,19 @@ export const InvoiceDetailsModal = ({
       </Badge>
     );
   };
+
+  const formatAmount = (value: unknown) => {
+    if (!value) return null;
+    const s = String(value).replace("|", " ").trim();
+    return s;
+  };
+
+  const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div>
+      <span className="text-sm font-medium text-muted-foreground">{label}:</span>
+      <div className="mt-1 text-sm">{children}</div>
+    </div>
+  );
 
   const handleSaveName = async () => {
     try {
@@ -142,10 +162,11 @@ export const InvoiceDetailsModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[82vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            📄 Invoice Details
+            <span>📄</span>
+            <span className="font-semibold">Invoice Details</span>
             <Badge variant="outline" className="text-xs">
               {invoice.fileName}
             </Badge>
@@ -153,128 +174,69 @@ export const InvoiceDetailsModal = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* File Information */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">📁 File Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="File Name">
+                    <p className="break-all">{invoice.fileName}</p>
+                  </Field>
+                  <Field label="Uploaded">
+                    <p>{formatDate(invoice.uploadedAt)}</p>
+                  </Field>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">🔍 Analysis Status</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[
+                    { label: "Classic Parsing", section: invoice.parsing, field: "parsedText" },
+                    { label: "AI Text Parsing", section: invoice.analysis, field: "parsedText" },
+                    { label: "Sender", section: invoice.analysis, field: "sender" },
+                    { label: "Date", section: invoice.analysis, field: "date" },
+                    { label: "Amount", section: invoice.analysis, field: "amount" },
+                  ].map((item) => (
+                    <div key={item.label} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{item.label}</span>
+                        {getStatusBadge(item.section, item.field)}
+                      </div>
+                      {item.section?.[item.field]?.error && (
+                        <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                          {item.section[item.field].error}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {invoice.analysis?.analysisBigError && (
+                  <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm font-medium text-red-800">Analysis Error:</p>
+                    <p className="text-xs text-red-600 mt-1">{invoice.analysis.analysisBigError}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">
-                📁 File Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium text-muted-foreground">
-                    File Name:
-                  </span>
-                  <p className="mt-1 break-all">{invoice.fileName}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-muted-foreground">
-                    Uploaded:
-                  </span>
-                  <p className="mt-1">{formatDate(invoice.uploadedAt)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Analysis Status */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">
-                🔍 Analysis Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Classic Parsing</span>
-                    {getStatusBadge(invoice.parsing, "parsedText")}
-                  </div>
-                  {invoice.parsing.parsedText.error && (
-                    <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                      {invoice.parsing.parsedText.error}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">AI Text Parsing</span>
-                    {getStatusBadge(invoice.analysis, "parsedText")}
-                  </div>
-                  {invoice.analysis.parsedText.error && (
-                    <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                      {invoice.analysis.parsedText.error}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Sender</span>
-                    {getStatusBadge(invoice.analysis, "sender")}
-                  </div>
-                  {invoice.analysis.sender.error && (
-                    <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                      {invoice.analysis.sender.error}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Date</span>
-                    {getStatusBadge(invoice.analysis, "date")}
-                  </div>
-                  {invoice.analysis.date.error && (
-                    <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                      {invoice.analysis.date.error}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Amount</span>
-                    {getStatusBadge(invoice.analysis, "amount")}
-                  </div>
-                  {invoice.analysis.amount.error && (
-                    <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                      {invoice.analysis.amount.error}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {invoice.analysis.analysisBigError && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-sm font-medium text-red-800">
-                    Analysis Error:
-                  </p>
-                  <p className="text-xs text-red-600 mt-1">
-                    {invoice.analysis.analysisBigError}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Extracted Information */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">
-                📋 Extracted Information
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">📋 Extracted Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Name:
-                  </span>
-                  <div className="mt-1 flex items-center gap-2">
+                  <span className="text-sm font-medium text-muted-foreground">Name:</span>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
                     {isEditingName ? (
                       <>
                         <Input
@@ -283,14 +245,8 @@ export const InvoiceDetailsModal = ({
                           className="text-sm"
                           autoFocus
                         />
-                        <Button size="sm" onClick={() => void handleSaveName()}>
-                          Save
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCancelEdit}
-                        >
+                        <Button size="sm" onClick={() => void handleSaveName()}>Save</Button>
+                        <Button size="sm" variant="outline" onClick={handleCancelEdit}>
                           Cancel
                         </Button>
                       </>
@@ -298,17 +254,10 @@ export const InvoiceDetailsModal = ({
                       <>
                         <p className="text-sm">
                           {invoice.name || (
-                            <span className="text-muted-foreground italic">
-                              Not available
-                            </span>
+                            <span className="text-muted-foreground italic">Not available</span>
                           )}
                         </p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setIsEditingName(true)}
-                          className="text-xs"
-                        >
+                        <Button size="sm" variant="ghost" onClick={() => setIsEditingName(true)} className="text-xs">
                           Edit
                         </Button>
                       </>
@@ -316,85 +265,66 @@ export const InvoiceDetailsModal = ({
                   </div>
                 </div>
 
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Sender:
-                  </span>
-                  <p className="mt-1 text-sm">
-                    {invoice.analysis.sender.value || (
-                      <span className="text-muted-foreground italic">
-                        Not available
-                      </span>
-                    )}
-                  </p>
-                </div>
+                <Field label="Sender">
+                  {invoice.analysis?.sender?.value || (
+                    <span className="text-muted-foreground italic">Not available</span>
+                  )}
+                </Field>
+
+                <Field label="Date">
+                  {invoice.analysis?.date?.value ? (
+                    formatDate(invoice.analysis.date.value)
+                  ) : (
+                    <span className="text-muted-foreground italic">Not available</span>
+                  )}
+                </Field>
 
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Date:
-                  </span>
-                  <p className="mt-1 text-sm">
-                    {invoice.analysis.date.value ? (
-                      formatDate(invoice.analysis.date.value)
-                    ) : (
-                      <span className="text-muted-foreground italic">
-                        Not available
-                      </span>
-                    )}
-                  </p>
-                </div>
-
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Amount:
-                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">Amount:</span>
                   <p className="mt-1 text-sm font-medium text-green-700">
-                    {invoice.analysis.amount.value ? (
-                      invoice.analysis.amount.value.replace("|", " ")
-                    ) : (
-                      <span className="text-muted-foreground italic">
-                        Not available
-                      </span>
+                    {formatAmount(invoice.analysis?.amount?.value) || (
+                      <span className="text-muted-foreground italic">Not available</span>
                     )}
                   </p>
                 </div>
               </div>
-
-              {invoice.parsing.parsedText.value && (
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Classic Parsed Text:
-                  </span>
-                  <div className="mt-2 p-3 bg-blue-50 rounded-md max-h-40 overflow-y-auto">
-                    <p className="text-xs whitespace-pre-wrap">
-                      {invoice.parsing.parsedText.value}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {invoice.analysis.parsedText.value && (
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    AI Parsed Text:
-                  </span>
-                  <div className="mt-2 p-3 bg-gray-50 rounded-md max-h-40 overflow-y-auto">
-                    <p className="text-xs whitespace-pre-wrap">
-                      {invoice.analysis.parsedText.value}
-                    </p>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {invoice.parsing?.parsedText?.value && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Classic Parsed Text</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="p-3 bg-blue-50 rounded-md max-h-56 overflow-y-auto">
+                    <p className="text-xs whitespace-pre-wrap">{invoice.parsing.parsedText.value}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {invoice.analysis?.parsedText?.value && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">AI Parsed Text</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="p-3 bg-gray-50 rounded-md max-h-56 overflow-y-auto">
+                    <p className="text-xs whitespace-pre-wrap">{invoice.analysis.parsedText.value}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <div className="flex flex-wrap justify-end gap-2 pt-4 border-t">
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
             <Button
-              variant="secondary"
+              variant="default"
               onClick={handleView}
               className="gap-2"
             >
@@ -402,7 +332,7 @@ export const InvoiceDetailsModal = ({
               View
             </Button>
             <Button
-              variant="secondary"
+              variant="default"
               onClick={handleEditInSejda}
               className="gap-2"
             >
@@ -410,7 +340,7 @@ export const InvoiceDetailsModal = ({
               Edit
             </Button>
             <Button
-              variant="secondary"
+              variant="default"
               onClick={() => void handleDownload()}
               className="gap-2"
             >
