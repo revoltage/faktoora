@@ -21,6 +21,7 @@ import type * as invoiceParsing from "../invoiceParsing.js";
 import type * as invoiceParsingMutations from "../invoiceParsingMutations.js";
 import type * as invoices from "../invoices.js";
 import type * as lib_pdfParser from "../lib/pdfParser.js";
+import type * as refundMatching from "../refundMatching.js";
 import type * as router from "../router.js";
 import type * as seed from "../seed.js";
 import type * as userSettings from "../userSettings.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   invoiceParsingMutations: typeof invoiceParsingMutations;
   invoices: typeof invoices;
   "lib/pdfParser": typeof lib_pdfParser;
+  refundMatching: typeof refundMatching;
   router: typeof router;
   seed: typeof seed;
   userSettings: typeof userSettings;
