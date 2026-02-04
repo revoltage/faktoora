@@ -3,9 +3,11 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -110,16 +112,6 @@ export function TransactionInvoiceBindingModal({
               Select Invoice
             </div>
             <div className="max-h-60 overflow-y-auto space-y-1">
-              {/* "Clear binding" option */}
-              <div
-                onClick={() => void handleBind(null)}
-                className={`flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer ${
-                  transaction?.boundInvoiceStorageId === null ? "bg-gray-100" : ""
-                }`}
-              >
-                <span className="text-sm text-gray-600">Clear binding</span>
-              </div>
-
               {/* Invoice options */}
               {invoices.map((invoice) => (
                 <div
@@ -142,19 +134,28 @@ export function TransactionInvoiceBindingModal({
                   </span>
                 </div>
               ))}
-
-              {/* "Invoice not needed" option at the bottom */}
-              <div
-                onClick={() => void handleBind(NOT_NEEDED)}
-                className={`flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer border-t mt-2 pt-3 ${
-                  transaction?.boundInvoiceStorageId === NOT_NEEDED ? "bg-gray-100" : ""
-                }`}
-              >
-                <span className="text-sm text-gray-500 italic">Invoice not needed</span>
-              </div>
             </div>
           </div>
         </div>
+
+        <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void handleBind(null)}
+            className="text-gray-600"
+          >
+            Clear Binding
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void handleBind(NOT_NEEDED)}
+            className="text-gray-500"
+          >
+            Not Needed
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
