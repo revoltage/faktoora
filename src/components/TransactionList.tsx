@@ -269,7 +269,7 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                     onClick={e => handleBindingClick(transaction, e)}
                     className={`h-8 w-8 p-0 rounded-full ${
                       transaction.boundInvoiceStorageId === NOT_NEEDED
-                        ? 'text-gray-400 hover:text-gray-500'
+                        ? 'text-gray-400/50 hover:text-gray-500/50'
                         : transaction.boundInvoiceStorageId
                           ? 'text-green-600 hover:text-green-700'
                           : 'text-orange-500 hover:text-orange-600'
