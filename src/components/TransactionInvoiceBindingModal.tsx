@@ -92,18 +92,15 @@ export function TransactionInvoiceBindingModal({
 
         <div className="space-y-4">
           {/* Transaction info */}
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <div className="text-xs font-medium text-gray-700 mb-1">
-              Transaction
-            </div>
-            <div className="text-sm text-gray-900">
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span className="text-sm font-bold text-gray-900 truncate">
               {transaction?.description || "No description"}
-            </div>
-            <div className="text-xs text-gray-500 mt-1">
+            </span>
+            <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
               {transaction?.amount && transaction?.paymentCurrency
                 ? `${transaction.paymentCurrency} ${parseFloat(transaction.amount).toFixed(2)}`
-                : "No amount"}
-            </div>
+                : ""}
+            </span>
           </div>
 
           {/* Invoice selection - click to bind */}
