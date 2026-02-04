@@ -138,15 +138,7 @@ export function TransactionInvoiceBindingModal({
           </div>
         </div>
 
-        <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void handleBind(null)}
-            className="text-gray-600"
-          >
-            Clear Binding
-          </Button>
+        <DialogFooter className="gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -154,6 +146,14 @@ export function TransactionInvoiceBindingModal({
             className="text-gray-500"
           >
             Not Needed
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void handleBind(null)}
+            className="text-gray-600"
+          >
+            Clear Binding
           </Button>
         </DialogFooter>
       </DialogContent>
