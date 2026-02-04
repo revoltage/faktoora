@@ -254,15 +254,32 @@ function createEmailContent(
   // Add invoices list
   if (hasInvoices) {
     // Sort invoices by uploadedAt (oldest first)
-    const sortedInvoices = [...invoices].sort((a, b) => 
+    const sortedInvoices = [...invoices].sort((a, b) =>
       new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime()
     );
-    
+
+    // Count occurrences of each display name
+    const nameCounts = new Map<string, number>();
     sortedInvoices.forEach((invoice) => {
-      // Priority: invoice name -> sender -> filename
       const displayName =
         invoice.name || invoice.analysis?.sender?.value || invoice.fileName;
-      emailContent += `• ${displayName}\n`;
+      nameCounts.set(displayName, (nameCounts.get(displayName) || 0) + 1);
+    });
+
+    // Build list with grouped counts, preserving first occurrence order
+    const seen = new Set<string>();
+    sortedInvoices.forEach((invoice) => {
+      const displayName =
+        invoice.name || invoice.analysis?.sender?.value || invoice.fileName;
+      if (!seen.has(displayName)) {
+        seen.add(displayName);
+        const count = nameCounts.get(displayName) || 1;
+        if (count > 1) {
+          emailContent += `• ${displayName} (x${count})\n`;
+        } else {
+          emailContent += `• ${displayName}\n`;
+        }
+      }
     });
   }
 
