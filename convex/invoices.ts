@@ -716,8 +716,41 @@ export const getMergedTransactions = query({
       }
     }
 
+    // Find refunded payment IDs
+    const refundedPaymentIds = new Set<string>();
+    const refunds = allTransactions
+      .filter(t => t.type === 'CARD_REFUND')
+      .sort((a, b) => new Date(a.dateCompleted).getTime() - new Date(b.dateCompleted).getTime());
+
+    for (const refund of refunds) {
+      const refundDate = new Date(refund.dateCompleted || refund.dateStarted);
+      const refundAmount = Math.abs(parseFloat(refund.origAmount));
+
+      // Find matching payment: same amount, currency, mcc, before refund date, not already matched
+      const matchingPayment = allTransactions
+        .filter(t =>
+          t.type === 'CARD_PAYMENT' &&
+          !refundedPaymentIds.has(t.id) &&
+          Math.abs(parseFloat(t.origAmount)) === refundAmount &&
+          t.origCurrency === refund.origCurrency &&
+          t.mcc === refund.mcc &&
+          new Date(t.dateCompleted || t.dateStarted) <= refundDate
+        )
+        .sort((a, b) => new Date(b.dateCompleted).getTime() - new Date(a.dateCompleted).getTime())[0];
+
+      if (matchingPayment) {
+        refundedPaymentIds.add(matchingPayment.id);
+      }
+    }
+
+    // Add isRefunded flag to all transactions
+    const transactionsWithRefundStatus = allTransactions.map(t => ({
+      ...t,
+      isRefunded: refundedPaymentIds.has(t.id)
+    }));
+
     // Sort by date (most recent first)
-    const sortedTransactions = allTransactions.sort((a, b) => {
+    const sortedTransactions = transactionsWithRefundStatus.sort((a, b) => {
       const dateA = new Date(a.dateCompleted || a.dateStarted);
       const dateB = new Date(b.dateCompleted || b.dateStarted);
       return dateB.getTime() - dateA.getTime();

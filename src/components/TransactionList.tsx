@@ -47,6 +47,11 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
 
   // Helper function to check if a transaction needs an invoice
   const transactionNeedsInvoice = (transaction: any) => {
+    // Refunded transactions don't need invoices
+    if (transaction.isRefunded) {
+      return false;
+    }
+
     // Filter by allowed transaction types
     if (!cfg.allowedTransactionTypes.includes(transaction.type)) {
       return false;
@@ -210,7 +215,7 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                 </span>
                 <div className='flex-1 min-w-0'>
                   <div className='flex items-center gap-1.5 mb-0.5 min-w-0'>
-                    <span className='font-medium text-foreground truncate text-xs'>
+                    <span className={`font-medium truncate text-xs ${transaction.isRefunded ? 'line-through text-gray-400' : 'text-foreground'}`}>
                       {transaction.description || 'No description'}
                     </span>
                     <Badge
