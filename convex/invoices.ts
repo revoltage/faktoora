@@ -697,17 +697,14 @@ export const getMergedTransactions = query({
       bindingMap.set(binding.transactionId, binding.invoiceStorageId);
     }
 
-    // Collect all transactions from CSV statements
-    const allTransactions = [];
-    const seenIds = new Set<string>();
+    // Collect all transactions from CSV statements (newer uploads overwrite older)
+    const transactionMap = new Map<string, any>();
 
     for (const statement of monthData.statements) {
       if (statement.fileType === "csv" && statement.transactions) {
         for (const transaction of statement.transactions) {
-          // Only add unique transactions based on ID
-          if (transaction.id && !seenIds.has(transaction.id)) {
-            seenIds.add(transaction.id);
-            allTransactions.push({
+          if (transaction.id) {
+            transactionMap.set(transaction.id, {
               ...transaction,
               sourceFile: statement.fileName,
               boundInvoiceStorageId: bindingMap.get(transaction.id) || null,
@@ -716,6 +713,8 @@ export const getMergedTransactions = query({
         }
       }
     }
+
+    const allTransactions = [...transactionMap.values()];
 
     // Add isRefunded flag to transactions that were later refunded
     const transactionsWithRefundStatus = addRefundStatus(allTransactions);
