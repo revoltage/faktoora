@@ -57,7 +57,7 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
       if (!isNaN(numAmount) && numAmount > 0) return false;
     }
 
-    if (cfg.hideExchangeRows && transaction.exchangeRate) {
+    if (cfg.hideExchangeRows && transaction.type === 'EXCHANGE') {
       return false;
     }
 
