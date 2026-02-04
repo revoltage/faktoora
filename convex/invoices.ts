@@ -868,7 +868,7 @@ export const bindTransactionToInvoice = mutation({
   args: {
     monthKey: v.string(),
     transactionId: v.string(),
-    invoiceStorageId: v.union(v.id("_storage"), v.null()),
+    invoiceStorageId: v.union(v.id("_storage"), v.literal("NOT_NEEDED"), v.null()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -892,7 +892,7 @@ export const bindTransactionToInvoice = mutation({
       (binding) => binding.transactionId !== args.transactionId
     );
 
-    // Add new binding if invoiceStorageId is not null
+    // Add new binding if invoiceStorageId is not null (includes "NOT_NEEDED")
     if (args.invoiceStorageId) {
       updatedBindings.push({
         transactionId: args.transactionId,

@@ -50,7 +50,8 @@ const applicationTables = {
     transactionInvoiceBindings: v.array(
       v.object({
         transactionId: v.string(),
-        invoiceStorageId: v.union(v.id("_storage"), v.null()),
+        // null = not bound, "NOT_NEEDED" = invoice explicitly not needed, or storage ID
+        invoiceStorageId: v.union(v.id("_storage"), v.literal("NOT_NEEDED"), v.null()),
         boundAt: v.number(),
       })
     ),

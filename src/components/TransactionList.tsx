@@ -1,11 +1,11 @@
 import { useQuery } from 'convex/react';
-import { AlertCircle, CheckCircle, Minus } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileX, Minus } from 'lucide-react';
 import { useState } from 'react';
 
 import { api } from '../../convex/_generated/api';
 
 import { TransactionDetailsModal } from '@/components/TransactionDetailsModal';
-import { TransactionInvoiceBindingModal } from '@/components/TransactionInvoiceBindingModal';
+import { TransactionInvoiceBindingModal, NOT_NEEDED } from '@/components/TransactionInvoiceBindingModal';
 import { TransactionListFooter } from '@/components/TransactionListFooter';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -268,17 +268,23 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                     size='sm'
                     onClick={e => handleBindingClick(transaction, e)}
                     className={`h-8 w-8 p-0 rounded-full ${
-                      transaction.boundInvoiceStorageId
-                        ? 'text-green-600 hover:text-green-700'
-                        : 'text-orange-500 hover:text-orange-600'
+                      transaction.boundInvoiceStorageId === NOT_NEEDED
+                        ? 'text-gray-400 hover:text-gray-500'
+                        : transaction.boundInvoiceStorageId
+                          ? 'text-green-600 hover:text-green-700'
+                          : 'text-orange-500 hover:text-orange-600'
                     }`}
                     title={
-                      transaction.boundInvoiceStorageId
-                        ? 'Change invoice binding'
-                        : 'Bind to invoice'
+                      transaction.boundInvoiceStorageId === NOT_NEEDED
+                        ? 'Invoice not needed (click to change)'
+                        : transaction.boundInvoiceStorageId
+                          ? 'Change invoice binding'
+                          : 'Bind to invoice'
                     }
                   >
-                    {transaction.boundInvoiceStorageId ? (
+                    {transaction.boundInvoiceStorageId === NOT_NEEDED ? (
+                      <FileX className='h-5 w-5 rounded-full' />
+                    ) : transaction.boundInvoiceStorageId ? (
                       <CheckCircle className='h-5 w-5 rounded-full' />
                     ) : (
                       <AlertCircle className='h-5 w-5 rounded-full' />

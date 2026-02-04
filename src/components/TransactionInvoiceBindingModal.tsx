@@ -1,10 +1,8 @@
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
 
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { calculateMatchScore } from "@/utils/invoiceMatching";
+
+export const NOT_NEEDED = "NOT_NEEDED" as const;
 
 interface TransactionInvoiceBindingModalProps {
   isOpen: boolean;
@@ -26,10 +26,6 @@ export function TransactionInvoiceBindingModal({
   transaction,
   monthKey,
 }: TransactionInvoiceBindingModalProps) {
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(
-    transaction?.boundInvoiceStorageId || null
-  );
-
   const monthData = useQuery(api.invoices.getMonthData, { monthKey });
   const bindTransaction = useMutation(api.invoices.bindTransactionToInvoice);
 
@@ -40,14 +36,14 @@ export function TransactionInvoiceBindingModal({
       .map((b) => b.invoiceStorageId)
   );
 
-  const handleSave = async () => {
+  const handleBind = async (invoiceStorageId: string | typeof NOT_NEEDED | null) => {
     if (!transaction?.id) return;
 
     try {
       await bindTransaction({
         monthKey,
         transactionId: transaction.id,
-        invoiceStorageId: selectedInvoiceId as Id<"_storage">,
+        invoiceStorageId: invoiceStorageId as Id<"_storage"> | typeof NOT_NEEDED | null,
       });
       onClose();
     } catch (error) {
@@ -55,14 +51,9 @@ export function TransactionInvoiceBindingModal({
     }
   };
 
-  const handleClose = () => {
-    setSelectedInvoiceId(transaction?.boundInvoiceStorageId || null);
-    onClose();
-  };
-
   if (!monthData) {
     return (
-      <Dialog open={isOpen} onOpenChange={handleClose}>
+      <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-md">
           <div className="flex justify-center items-center py-4">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
@@ -89,7 +80,7 @@ export function TransactionInvoiceBindingModal({
   });
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-sm">
@@ -113,39 +104,31 @@ export function TransactionInvoiceBindingModal({
             </div>
           </div>
 
-          {/* Invoice selection */}
+          {/* Invoice selection - click to bind */}
           <div className="space-y-2">
             <div className="text-xs font-medium text-gray-700">
               Select Invoice
             </div>
             <div className="max-h-60 overflow-y-auto space-y-1">
-              {/* "Nothing" option */}
-              <label className="flex items-center p-1 hover:bg-gray-50 rounded cursor-pointer">
-                <input
-                  type="radio"
-                  name="invoice"
-                  value=""
-                  checked={selectedInvoiceId === null}
-                  onChange={() => setSelectedInvoiceId(null)}
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-600">No invoice</span>
-              </label>
+              {/* "Clear binding" option */}
+              <div
+                onClick={() => void handleBind(null)}
+                className={`flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer ${
+                  transaction?.boundInvoiceStorageId === null ? "bg-gray-100" : ""
+                }`}
+              >
+                <span className="text-sm text-gray-600">Clear binding</span>
+              </div>
 
               {/* Invoice options */}
               {invoices.map((invoice) => (
-                <label
+                <div
                   key={invoice.storageId}
-                  className={`flex items-center p-1 hover:bg-gray-50 rounded cursor-pointer ${invoice.isBoundToOther ? "opacity-50" : ""}`}
+                  onClick={() => void handleBind(invoice.storageId)}
+                  className={`flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer ${
+                    invoice.isBoundToOther ? "opacity-50" : ""
+                  } ${transaction?.boundInvoiceStorageId === invoice.storageId ? "bg-green-50" : ""}`}
                 >
-                  <input
-                    type="radio"
-                    name="invoice"
-                    value={invoice.storageId}
-                    checked={selectedInvoiceId === invoice.storageId}
-                    onChange={() => setSelectedInvoiceId(invoice.storageId)}
-                    className="mr-2"
-                  />
                   <span className={`text-sm truncate ${invoice.isBoundToOther ? "text-gray-500" : "text-gray-900"}`}>
                     {invoice.name || invoice.fileName}
                   </span>
@@ -157,19 +140,19 @@ export function TransactionInvoiceBindingModal({
                       </span>
                     )}
                   </span>
-                </label>
+                </div>
               ))}
-            </div>
-          </div>
 
-          {/* Action buttons */}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={handleClose} size="sm">
-              Cancel
-            </Button>
-            <Button onClick={() => void handleSave()} size="sm">
-              Save Binding
-            </Button>
+              {/* "Invoice not needed" option at the bottom */}
+              <div
+                onClick={() => void handleBind(NOT_NEEDED)}
+                className={`flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer border-t mt-2 pt-3 ${
+                  transaction?.boundInvoiceStorageId === NOT_NEEDED ? "bg-gray-100" : ""
+                }`}
+              >
+                <span className="text-sm text-gray-500 italic">Invoice not needed</span>
+              </div>
+            </div>
           </div>
         </div>
       </DialogContent>
