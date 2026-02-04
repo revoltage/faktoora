@@ -76,8 +76,10 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
     return true;
   };
 
-  // Filter transactions based on constants
-  const filteredTransactions = transactions.filter(transactionNeedsInvoice);
+  // Filter transactions based on constants (include refunded for visibility)
+  const filteredTransactions = transactions.filter(
+    t => transactionNeedsInvoice(t) || t.isRefunded
+  );
 
   if (transactions.length === 0) {
     return (
