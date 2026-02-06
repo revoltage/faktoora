@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import { Header } from "../components/Header";
 import { InvoiceDetailsModal } from "../components/InvoiceDetailsModal";
 import { InvoiceList } from "../components/InvoiceList";
+import { MonthSummary } from "../components/MonthSummary";
 import { StatementsSection } from "../components/StatementsSection";
 import { EmailDraft } from "../components/EmailDraft";
 import { Button } from "../components/ui/button";
@@ -177,6 +178,11 @@ export function InvoiceManagerPageContent({
 
   return (
     <div className="mt-4 space-y-3 sm:space-y-4">
+      <MonthSummary
+        monthKey={currentMonth}
+        invoices={monthData.incomingInvoices}
+      />
+
       <EmailDraft
         invoices={monthData.incomingInvoices}
         statements={monthData.statements}
