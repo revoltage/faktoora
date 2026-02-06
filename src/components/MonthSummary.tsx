@@ -25,11 +25,10 @@ export function MonthSummary({
 
   if (transactions) {
     for (const t of transactions) {
-      const amount = parseFloat(t.origAmount || t.amount);
-      const currency = t.origCurrency || t.paymentCurrency;
-      if (isNaN(amount) || !currency) continue;
+      const amount = parseFloat(t.amount);
+      if (isNaN(amount) || !t.paymentCurrency) continue;
 
-      const amountEur = toEur(amount, currency);
+      const amountEur = toEur(amount, t.paymentCurrency);
 
       if (expenseTypes.includes(t.type) && amount < 0) {
         expenseTotalEur += amountEur;
