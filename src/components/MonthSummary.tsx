@@ -32,7 +32,7 @@ export function MonthSummary({
       const amount = parseFloat(t.amount);
       if (isNaN(amount) || !t.paymentCurrency) continue;
 
-      if (expenseTypes.includes(t.type) && amount < 0) {
+      if (expenseTypes.includes(t.type) && amount < 0 && !t.isRefunded) {
         expenseEur += toEur(amount, t.paymentCurrency);
         expenseCount++;
       }
