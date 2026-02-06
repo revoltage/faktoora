@@ -13,17 +13,32 @@ export function MonthSummary({
     monthKey,
   });
 
-  // --- Transaction totals ---
-  let transactionTotalEur = 0;
-  let transactionCount = 0;
+  // --- Transaction totals (expenses): CARD_PAYMENT/MANUAL, negative only ---
+  const expenseTypes = ['CARD_PAYMENT', 'MANUAL'];
+  let expenseTotalEur = 0;
+  let expenseCount = 0;
+
+  // --- Transaction totals (income): TRANSFER/TOPUP, positive only ---
+  const incomeTypes = ['TRANSFER', 'TOPUP'];
+  let incomeTotalEur = 0;
+  let incomeCount = 0;
 
   if (transactions) {
     for (const t of transactions) {
       const amount = parseFloat(t.origAmount || t.amount);
       const currency = t.origCurrency || t.paymentCurrency;
-      if (!isNaN(amount) && currency) {
-        transactionTotalEur += toEur(amount, currency);
-        transactionCount++;
+      if (isNaN(amount) || !currency) continue;
+
+      const amountEur = toEur(amount, currency);
+
+      if (expenseTypes.includes(t.type) && amount < 0) {
+        expenseTotalEur += amountEur;
+        expenseCount++;
+      }
+
+      if (incomeTypes.includes(t.type) && amount > 0) {
+        incomeTotalEur += amountEur;
+        incomeCount++;
       }
     }
   }
@@ -40,24 +55,33 @@ export function MonthSummary({
     }
   }
 
-  if (!transactions || (transactionCount === 0 && invoiceCount === 0)) {
+  if (!transactions || (expenseCount === 0 && incomeCount === 0 && invoiceCount === 0)) {
     return null;
   }
 
   return (
     <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-      {transactionCount > 0 && (
+      {expenseCount > 0 && (
         <span>
-          Transactions total:{" "}
+          Expenses:{" "}
           <span className="font-semibold text-foreground">
-            {formatEur(transactionTotalEur)}
+            {formatEur(expenseTotalEur)}
           </span>{" "}
-          <span className="text-[10px]">({transactionCount} txns)</span>
+          <span className="text-[10px]">({expenseCount} txns)</span>
+        </span>
+      )}
+      {incomeCount > 0 && (
+        <span>
+          Income:{" "}
+          <span className="font-semibold text-foreground">
+            {formatEur(incomeTotalEur)}
+          </span>{" "}
+          <span className="text-[10px]">({incomeCount} txns)</span>
         </span>
       )}
       {invoiceCount > 0 && (
         <span>
-          Invoices total:{" "}
+          Invoices:{" "}
           <span className="font-semibold text-foreground">
             {formatEur(invoiceTotalEur)}
           </span>{" "}
