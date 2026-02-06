@@ -64,7 +64,7 @@ export function MonthSummary({
         <span title={`${expenseCount} transactions (CARD_PAYMENT, MANUAL)`}>
           Expenses:{" "}
           <span className="font-semibold text-foreground">
-            {format(fromEur(expenseEur, currency), currency)}
+            {format(Math.abs(fromEur(expenseEur, currency)), currency)}
           </span>
         </span>
       )}
