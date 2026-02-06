@@ -178,11 +178,6 @@ export function InvoiceManagerPageContent({
 
   return (
     <div className="mt-4 space-y-3 sm:space-y-4">
-      <MonthSummary
-        monthKey={currentMonth}
-        invoices={monthData.incomingInvoices}
-      />
-
       <EmailDraft
         invoices={monthData.incomingInvoices}
         statements={monthData.statements}
@@ -209,6 +204,12 @@ export function InvoiceManagerPageContent({
         deleteAllInvoices={deleteAllInvoices}
         transactionInvoiceBindings={monthData.transactionInvoiceBindings || []}
       />
+
+      <MonthSummary
+        monthKey={currentMonth}
+        invoices={monthData.incomingInvoices}
+      />
+
       {/* Invoice Details Modal */}
       <InvoiceDetailsModal
         invoice={selectedInvoice}
