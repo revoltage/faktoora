@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 
 // Convex-recommended seeding approach
 export const seedFeatureFlags = internalMutation(async (ctx) => {
@@ -221,7 +222,7 @@ export const seedMockData = internalAction({
       })
     ),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ monthKey: string; count: number; userId: Id<"users"> }> => {
     const userId = await ctx.runQuery(internal.seed.getLastUser);
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -240,7 +241,6 @@ export const seedMockData = internalAction({
           fileName: file.name,
         });
       } else {
-        // For CSVs, decode content for transaction parsing
         const csvContent = new TextDecoder().decode(bytes);
         await ctx.runMutation(internal.seed.seedAddStatement, {
           userId,
