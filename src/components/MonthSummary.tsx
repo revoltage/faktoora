@@ -1,4 +1,5 @@
 import { useQuery } from "convex/react";
+import { Fragment } from "react";
 import { api } from "../../convex/_generated/api";
 import { toEur, fromEur, parseInvoiceAmount } from "@/lib/currency";
 
@@ -58,38 +59,27 @@ export function MonthSummary({
     return null;
   }
 
-  const renderRow = (currency: string) => (
-    <div key={currency} className="flex flex-wrap gap-2">
-      {expenseCount > 0 && (
-        <span title={`${expenseCount} transactions (CARD_PAYMENT, MANUAL)`}>
-          Expenses:{" "}
-          <span className="font-semibold text-foreground">
-            {format(Math.abs(fromEur(expenseEur, currency)), currency)}
-          </span>
-        </span>
-      )}
-      {incomeCount > 0 && (
-        <span title={`${incomeCount} transactions (TRANSFER, TOPUP)`}>
-          Income:{" "}
-          <span className="font-semibold text-foreground">
-            {format(fromEur(incomeEur, currency), currency)}
-          </span>
-        </span>
-      )}
-      {invoiceCount > 0 && (
-        <span title={`${invoiceCount} invoices`}>
-          Invoices:{" "}
-          <span className="font-semibold text-foreground">
-            {format(fromEur(invoiceEur, currency), currency)}
-          </span>
-        </span>
-      )}
-    </div>
-  );
+  const cols = [
+    expenseCount > 0 && { label: 'Expenses', eurAmount: Math.abs(expenseEur), tooltip: `${expenseCount} transactions (CARD_PAYMENT, MANUAL)` },
+    incomeCount > 0 && { label: 'Income', eurAmount: incomeEur, tooltip: `${incomeCount} transactions (TRANSFER, TOPUP)` },
+    invoiceCount > 0 && { label: 'Invoices', eurAmount: invoiceEur, tooltip: `${invoiceCount} invoices` },
+  ].filter(Boolean) as { label: string; eurAmount: number; tooltip: string }[];
 
   return (
-    <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-      {DISPLAY_CURRENCIES.map(renderRow)}
+    <div
+      className="grid w-fit gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground"
+      style={{ gridTemplateColumns: `repeat(${cols.length}, auto auto)` }}
+    >
+      {DISPLAY_CURRENCIES.map(currency =>
+        cols.map(col => (
+          <Fragment key={`${currency}-${col.label}`}>
+            <span title={col.tooltip}>{col.label}:</span>
+            <span className="text-right font-semibold text-foreground tabular-nums" title={col.tooltip}>
+              {format(fromEur(col.eurAmount, currency), currency)}
+            </span>
+          </Fragment>
+        ))
+      )}
     </div>
   );
 }
