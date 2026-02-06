@@ -25,6 +25,9 @@ export default defineConfig(({ mode }) => ({
       : null,
     // End of code for taking screenshots on chef.convex.dev.
   ].filter(Boolean),
+  server: {
+    port: 5100,
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
