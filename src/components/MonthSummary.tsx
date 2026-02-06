@@ -26,6 +26,8 @@ export function MonthSummary({
   let expenseCount = 0;
   let incomeEur = 0;
   let incomeCount = 0;
+  let feeEur = 0;
+  let feeCount = 0;
 
   if (transactions) {
     for (const t of transactions) {
@@ -41,6 +43,11 @@ export function MonthSummary({
         incomeEur += toEur(amount, t.paymentCurrency);
         incomeCount++;
       }
+
+      if (t.type === 'FEE') {
+        feeEur += toEur(amount, t.paymentCurrency);
+        feeCount++;
+      }
     }
   }
 
@@ -55,14 +62,15 @@ export function MonthSummary({
     }
   }
 
-  if (!transactions || (expenseCount === 0 && incomeCount === 0 && invoiceCount === 0)) {
+  if (!transactions || (expenseCount === 0 && incomeCount === 0 && feeCount === 0 && invoiceCount === 0)) {
     return null;
   }
 
   const cols = [
-    expenseCount > 0 && { label: 'Expenses', eurAmount: Math.abs(expenseEur), tooltip: `${expenseCount} transactions (CARD_PAYMENT, MANUAL)` },
-    incomeCount > 0 && { label: 'Income', eurAmount: incomeEur, tooltip: `${incomeCount} transactions (TRANSFER, TOPUP)` },
     invoiceCount > 0 && { label: 'Invoices', eurAmount: invoiceEur, tooltip: `${invoiceCount} invoices` },
+    expenseCount > 0 && { label: 'Expenses', eurAmount: Math.abs(expenseEur), tooltip: `${expenseCount} transactions (CARD_PAYMENT, MANUAL)` },
+    feeCount > 0 && { label: 'Fees', eurAmount: Math.abs(feeEur), tooltip: `${feeCount} transactions (FEE)` },
+    incomeCount > 0 && { label: 'Income', eurAmount: incomeEur, tooltip: `${incomeCount} transactions (TRANSFER, TOPUP)` },
   ].filter(Boolean) as { label: string; eurAmount: number; tooltip: string }[];
 
   return (
