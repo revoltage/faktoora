@@ -1,6 +1,18 @@
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { toEur, formatEur, parseInvoiceAmount } from "@/lib/currency";
+import { parseInvoiceAmount } from "@/lib/currency";
+
+type CurrencyTotals = Record<string, { total: number; count: number }>;
+
+function addTo(totals: CurrencyTotals, currency: string, amount: number) {
+  if (!totals[currency]) totals[currency] = { total: 0, count: 0 };
+  totals[currency].total += amount;
+  totals[currency].count++;
+}
+
+function formatAmount(amount: number, currency: string) {
+  return `${currency} ${amount.toFixed(2)}`;
+}
 
 export function MonthSummary({
   monthKey,
@@ -13,79 +25,73 @@ export function MonthSummary({
     monthKey,
   });
 
-  // --- Transaction totals (expenses): CARD_PAYMENT/MANUAL, negative only ---
   const expenseTypes = ['CARD_PAYMENT', 'MANUAL'];
-  let expenseTotalEur = 0;
-  let expenseCount = 0;
-
-  // --- Transaction totals (income): TRANSFER/TOPUP, positive only ---
   const incomeTypes = ['TRANSFER', 'TOPUP'];
-  let incomeTotalEur = 0;
-  let incomeCount = 0;
+  const expenses: CurrencyTotals = {};
+  const income: CurrencyTotals = {};
 
   if (transactions) {
     for (const t of transactions) {
       const amount = parseFloat(t.amount);
       if (isNaN(amount) || !t.paymentCurrency) continue;
 
-      const amountEur = toEur(amount, t.paymentCurrency);
-
       if (expenseTypes.includes(t.type) && amount < 0) {
-        expenseTotalEur += amountEur;
-        expenseCount++;
+        addTo(expenses, t.paymentCurrency, amount);
       }
 
       if (incomeTypes.includes(t.type) && amount > 0) {
-        incomeTotalEur += amountEur;
-        incomeCount++;
+        addTo(income, t.paymentCurrency, amount);
       }
     }
   }
 
-  // --- Invoice totals ---
-  let invoiceTotalEur = 0;
-  let invoiceCount = 0;
-
+  const invoiceTotals: CurrencyTotals = {};
   for (const inv of invoices) {
     const parsed = parseInvoiceAmount(inv.analysis?.amount?.value);
     if (parsed) {
-      invoiceTotalEur += toEur(parsed.amount, parsed.currency);
-      invoiceCount++;
+      addTo(invoiceTotals, parsed.currency, parsed.amount);
     }
   }
 
-  if (!transactions || (expenseCount === 0 && incomeCount === 0 && invoiceCount === 0)) {
+  const hasExpenses = Object.keys(expenses).length > 0;
+  const hasIncome = Object.keys(income).length > 0;
+  const hasInvoices = Object.keys(invoiceTotals).length > 0;
+
+  if (!transactions || (!hasExpenses && !hasIncome && !hasInvoices)) {
     return null;
   }
 
+  const renderTotals = (totals: CurrencyTotals) =>
+    Object.entries(totals)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([currency, { total, count }]) => (
+        <span key={currency}>
+          <span className="font-semibold text-foreground">
+            {formatAmount(total, currency)}
+          </span>{" "}
+          <span className="text-[10px]">({count})</span>
+        </span>
+      ));
+
   return (
-    <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-      {expenseCount > 0 && (
-        <span>
-          Expenses:{" "}
-          <span className="font-semibold text-foreground">
-            {formatEur(expenseTotalEur)}
-          </span>{" "}
-          <span className="text-[10px]">({expenseCount} txns)</span>
-        </span>
+    <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+      {hasExpenses && (
+        <div className="flex flex-wrap gap-3">
+          <span>Expenses:</span>
+          {renderTotals(expenses)}
+        </div>
       )}
-      {incomeCount > 0 && (
-        <span>
-          Income:{" "}
-          <span className="font-semibold text-foreground">
-            {formatEur(incomeTotalEur)}
-          </span>{" "}
-          <span className="text-[10px]">({incomeCount} txns)</span>
-        </span>
+      {hasIncome && (
+        <div className="flex flex-wrap gap-3">
+          <span>Income:</span>
+          {renderTotals(income)}
+        </div>
       )}
-      {invoiceCount > 0 && (
-        <span>
-          Invoices:{" "}
-          <span className="font-semibold text-foreground">
-            {formatEur(invoiceTotalEur)}
-          </span>{" "}
-          <span className="text-[10px]">({invoiceCount} inv)</span>
-        </span>
+      {hasInvoices && (
+        <div className="flex flex-wrap gap-3">
+          <span>Invoices:</span>
+          {renderTotals(invoiceTotals)}
+        </div>
       )}
     </div>
   );
