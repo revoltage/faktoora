@@ -59,39 +59,36 @@ export function MonthSummary({
   }
 
   const renderRow = (currency: string) => (
-    <div key={currency} className="flex flex-wrap gap-3">
+    <div key={currency} className="flex flex-wrap gap-2">
       {expenseCount > 0 && (
-        <span>
+        <span title={`${expenseCount} transactions (CARD_PAYMENT, MANUAL)`}>
           Expenses:{" "}
           <span className="font-semibold text-foreground">
             {format(fromEur(expenseEur, currency), currency)}
-          </span>{" "}
-          <span className="text-[10px]">({expenseCount} txns)</span>
+          </span>
         </span>
       )}
       {incomeCount > 0 && (
-        <span>
+        <span title={`${incomeCount} transactions (TRANSFER, TOPUP)`}>
           Income:{" "}
           <span className="font-semibold text-foreground">
             {format(fromEur(incomeEur, currency), currency)}
-          </span>{" "}
-          <span className="text-[10px]">({incomeCount} txns)</span>
+          </span>
         </span>
       )}
       {invoiceCount > 0 && (
-        <span>
+        <span title={`${invoiceCount} invoices`}>
           Invoices:{" "}
           <span className="font-semibold text-foreground">
             {format(fromEur(invoiceEur, currency), currency)}
-          </span>{" "}
-          <span className="text-[10px]">({invoiceCount} inv)</span>
+          </span>
         </span>
       )}
     </div>
   );
 
   return (
-    <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+    <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
       {DISPLAY_CURRENCIES.map(renderRow)}
     </div>
   );
