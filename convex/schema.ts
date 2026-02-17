@@ -8,7 +8,6 @@ const analysisResult = v.object({
   lastUpdated: v.union(v.number(), v.null()),
 });
 
-
 const applicationTables = {
   userSettings: defineTable({
     userId: v.id("users"),
@@ -17,15 +16,25 @@ const applicationTables = {
     accEmail: v.optional(v.string()),
     manualTransactions: v.optional(v.string()),
     updatedAt: v.number(),
+  }).index("by_user", ["userId"]),
+  apiKeys: defineTable({
+    userId: v.id("users"),
+    label: v.string(),
+    keyHash: v.string(),
+    keyPrefix: v.string(),
+    scopes: v.array(v.literal("upload:write")),
+    createdAt: v.number(),
+    lastUsedAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
   })
+    .index("by_hash", ["keyHash"])
     .index("by_user", ["userId"]),
   featureFlags: defineTable({
     flagName: v.string(),
     enabled: v.boolean(),
     description: v.optional(v.string()),
     updatedAt: v.number(),
-  })
-    .index("by_flag_name", ["flagName"]),
+  }).index("by_flag_name", ["flagName"]),
   months: defineTable({
     userId: v.id("users"),
     monthKey: v.string(), // Format: "YYYY-MM"
@@ -45,15 +54,19 @@ const applicationTables = {
         parsing: v.object({
           parsedText: analysisResult,
         }),
-      })
+      }),
     ),
     transactionInvoiceBindings: v.array(
       v.object({
         transactionId: v.string(),
         // null = not bound, "NOT_NEEDED" = invoice explicitly not needed, or storage ID
-        invoiceStorageId: v.union(v.id("_storage"), v.literal("NOT_NEEDED"), v.null()),
+        invoiceStorageId: v.union(
+          v.id("_storage"),
+          v.literal("NOT_NEEDED"),
+          v.null(),
+        ),
         boundAt: v.number(),
-      })
+      }),
     ),
     statements: v.array(
       v.object({
@@ -61,42 +74,43 @@ const applicationTables = {
         fileName: v.string(),
         fileType: v.union(v.literal("pdf"), v.literal("csv")),
         uploadedAt: v.number(),
-        transactions: v.optional(v.array(
-          v.object({
-            id: v.string(),
-            dateStarted: v.string(),
-            dateCompleted: v.string(),
-            type: v.string(),
-            state: v.string(),
-            description: v.string(),
-            reference: v.string(),
-            payer: v.string(),
-            cardNumber: v.string(),
-            cardLabel: v.string(),
-            cardState: v.string(),
-            origCurrency: v.string(),
-            origAmount: v.string(),
-            paymentCurrency: v.string(),
-            amount: v.string(),
-            totalAmount: v.string(),
-            exchangeRate: v.string(),
-            fee: v.string(),
-            feeCurrency: v.string(),
-            balance: v.string(),
-            account: v.string(),
-            beneficiaryAccountNumber: v.string(),
-            beneficiarySortCode: v.string(),
-            beneficiaryIban: v.string(),
-            beneficiaryBic: v.string(),
-            mcc: v.string(),
-            relatedTransactionId: v.string(),
-            spendProgram: v.string(),
-          })
-        )),
-      })
+        transactions: v.optional(
+          v.array(
+            v.object({
+              id: v.string(),
+              dateStarted: v.string(),
+              dateCompleted: v.string(),
+              type: v.string(),
+              state: v.string(),
+              description: v.string(),
+              reference: v.string(),
+              payer: v.string(),
+              cardNumber: v.string(),
+              cardLabel: v.string(),
+              cardState: v.string(),
+              origCurrency: v.string(),
+              origAmount: v.string(),
+              paymentCurrency: v.string(),
+              amount: v.string(),
+              totalAmount: v.string(),
+              exchangeRate: v.string(),
+              fee: v.string(),
+              feeCurrency: v.string(),
+              balance: v.string(),
+              account: v.string(),
+              beneficiaryAccountNumber: v.string(),
+              beneficiarySortCode: v.string(),
+              beneficiaryIban: v.string(),
+              beneficiaryBic: v.string(),
+              mcc: v.string(),
+              relatedTransactionId: v.string(),
+              spendProgram: v.string(),
+            }),
+          ),
+        ),
+      }),
     ),
-  })
-    .index("by_user_and_month", ["userId", "monthKey"]),
+  }).index("by_user_and_month", ["userId", "monthKey"]),
 };
 
 export default defineSchema({
