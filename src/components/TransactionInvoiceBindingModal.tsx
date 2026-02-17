@@ -35,17 +35,22 @@ export function TransactionInvoiceBindingModal({
   const boundToOtherTransactions = new Set(
     (monthData?.transactionInvoiceBindings || [])
       .filter((b) => b.transactionId !== transaction?.id)
-      .map((b) => b.invoiceStorageId)
+      .map((b) => b.invoiceStorageId),
   );
 
-  const handleBind = async (invoiceStorageId: string | typeof NOT_NEEDED | null) => {
+  const handleBind = async (
+    invoiceStorageId: string | typeof NOT_NEEDED | null,
+  ) => {
     if (!transaction?.id) return;
 
     try {
       await bindTransaction({
         monthKey,
         transactionId: transaction.id,
-        invoiceStorageId: invoiceStorageId as Id<"_storage"> | typeof NOT_NEEDED | null,
+        invoiceStorageId: invoiceStorageId as
+          | Id<"_storage">
+          | typeof NOT_NEEDED
+          | null,
       });
       onClose();
     } catch (error) {
@@ -66,11 +71,13 @@ export function TransactionInvoiceBindingModal({
   }
 
   // Score and sort invoices: by score (highest first), then unbound before bound
-  const invoicesWithScores = (monthData.incomingInvoices || []).map((invoice) => ({
-    ...invoice,
-    matchScore: calculateMatchScore(transaction, invoice),
-    isBoundToOther: boundToOtherTransactions.has(invoice.storageId),
-  }));
+  const invoicesWithScores = (monthData.incomingInvoices || []).map(
+    (invoice) => ({
+      ...invoice,
+      matchScore: calculateMatchScore(transaction, invoice as any),
+      isBoundToOther: boundToOtherTransactions.has(invoice.storageId),
+    }),
+  );
 
   const invoices = invoicesWithScores.sort((a, b) => {
     // First: unbound invoices before bound ones
@@ -112,19 +119,26 @@ export function TransactionInvoiceBindingModal({
               {/* Invoice options */}
               {invoices.map((invoice) => (
                 <div
-                  key={invoice.storageId}
+                  key={
+                    invoice.invoiceId ??
+                    `${invoice.storageId}-${invoice.uploadedAt}`
+                  }
                   onClick={() => void handleBind(invoice.storageId)}
                   className={`flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer ${
                     invoice.isBoundToOther ? "opacity-50" : ""
                   } ${transaction?.boundInvoiceStorageId === invoice.storageId ? "bg-green-50" : ""}`}
                 >
-                  <span className={`text-sm truncate ${invoice.isBoundToOther ? "text-gray-500" : "text-gray-900"}`}>
+                  <span
+                    className={`text-sm truncate ${invoice.isBoundToOther ? "text-gray-500" : "text-gray-900"}`}
+                  >
                     {invoice.name || invoice.fileName}
                   </span>
                   <span className="text-xs text-gray-500 ml-auto">
                     {new Date(invoice.uploadedAt).toLocaleDateString()}
                     {invoice.analysis.amount.value && (
-                      <span className={`ml-1 ${invoice.isBoundToOther ? "text-gray-500" : "font-bold text-gray-700"}`}>
+                      <span
+                        className={`ml-1 ${invoice.isBoundToOther ? "text-gray-500" : "font-bold text-gray-700"}`}
+                      >
                         {invoice.analysis.amount.value.replace("|", " ")}
                       </span>
                     )}

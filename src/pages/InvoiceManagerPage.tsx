@@ -32,7 +32,7 @@ export function InvoiceManagerPage() {
       if (path === "/") {
         const now = new Date();
         setCurrentMonth(
-          `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+          `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
         );
       } else {
         setCurrentMonth(path.substring(1));
@@ -141,11 +141,13 @@ export function InvoiceManagerPageContent({
     setSelectedInvoice(null);
   };
 
-  const handleDeleteInvoice = async (storageId: any) => {
+  const handleDeleteInvoice = async (invoice: any) => {
     try {
       await deleteIncomingInvoice({
         monthKey: currentMonth,
-        storageId,
+        invoiceId: invoice.invoiceId,
+        storageId: invoice.storageId,
+        uploadedAt: invoice.uploadedAt,
       });
       closeInvoiceModal();
       toast.success("🗑️ Invoice deleted successfully");
@@ -154,11 +156,13 @@ export function InvoiceManagerPageContent({
     }
   };
 
-  const handleUpdateInvoiceName = async (storageId: any, name: string) => {
+  const handleUpdateInvoiceName = async (invoice: any, name: string) => {
     try {
       await updateInvoiceName({
         monthKey: currentMonth,
-        storageId,
+        invoiceId: invoice.invoiceId,
+        storageId: invoice.storageId,
+        uploadedAt: invoice.uploadedAt,
         name,
       });
     } catch {
@@ -166,7 +170,6 @@ export function InvoiceManagerPageContent({
       throw new Error("Failed to update invoice name");
     }
   };
-
 
   if (!monthData) {
     return (
@@ -183,14 +186,14 @@ export function InvoiceManagerPageContent({
         statements={monthData.statements}
         monthKey={currentMonth}
         uploadingInvoices={uploadingInvoices}
-        />
+      />
 
-        <StatementsSection
-          monthKey={currentMonth}
-          statements={monthData.statements}
-          generateUploadUrl={generateUploadUrl}
-          deleteAllStatements={deleteAllStatements}
-        />
+      <StatementsSection
+        monthKey={currentMonth}
+        statements={monthData.statements}
+        generateUploadUrl={generateUploadUrl}
+        deleteAllStatements={deleteAllStatements}
+      />
 
       <InvoiceList
         monthKey={currentMonth}

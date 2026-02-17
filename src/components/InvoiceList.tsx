@@ -89,7 +89,7 @@ export const InvoiceList = ({
   const boundInvoiceIds = new Set(
     transactionInvoiceBindings
       .map((binding) => binding.invoiceStorageId)
-      .filter((id): id is string => id !== null)
+      .filter((id): id is string => id !== null),
   );
 
   // Check if an invoice is bound
@@ -121,6 +121,13 @@ export const InvoiceList = ({
     }
   };
 
+  const computeFileHash = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  };
+
   const handleUploadInvoice = async (file: File) => {
     const uploadId = `upload-${Date.now()}-${Math.random()}`;
     const uploadingInvoice: UploadingInvoice = {
@@ -132,6 +139,13 @@ export const InvoiceList = ({
     onUploadingStateChange((prev) => [...prev, uploadingInvoice]);
 
     try {
+      let fileHash: string | undefined;
+      try {
+        fileHash = await computeFileHash(file);
+      } catch {
+        // Continue upload even if hashing fails
+      }
+
       const uploadUrl = await generateUploadUrl();
       const result = await fetch(uploadUrl, {
         method: "POST",
@@ -143,13 +157,14 @@ export const InvoiceList = ({
         monthKey,
         storageId,
         fileName: file.name,
+        fileHash,
       });
     } catch {
       toast.error("Failed to upload invoice");
     } finally {
       // Remove from uploading state
       onUploadingStateChange((prev) =>
-        prev.filter((inv) => inv.uploadId !== uploadId)
+        prev.filter((inv) => inv.uploadId !== uploadId),
       );
     }
   };
@@ -312,11 +327,14 @@ export const InvoiceList = ({
               const isBound = isInvoiceBound(invoice);
               return (
                 <div
-                  key={invoice.storageId}
+                  key={
+                    invoice.invoiceId ??
+                    `${invoice.storageId}-${invoice.uploadedAt}`
+                  }
                   className={cn(
                     "flex items-center justify-between pt-0.5 pb-1 hover:bg-gray-50 transition-colors cursor-pointer",
                     "-mx-2 px-1 rounded-lg",
-                    isBound && "opacity-60"
+                    isBound && "opacity-60",
                   )}
                   onClick={() => onInvoiceClick(invoice)}
                 >
@@ -333,6 +351,11 @@ export const InvoiceList = ({
                           >
                             {invoice.name ?? invoice.fileName}
                           </span>
+                          {invoice.isDuplicate && (
+                            <span className="text-[8px] font-medium text-amber-700 bg-amber-100 border border-amber-200 px-1 py-0 rounded whitespace-nowrap">
+                              Duplicate
+                            </span>
+                          )}
 
                           <span className="text-[9px] text-muted-foreground whitespace-nowrap">
                             {invoice.analysis.date.error ? (
@@ -341,7 +364,7 @@ export const InvoiceList = ({
                                 onClick={() =>
                                   console.error(
                                     "🔍 Date Analysis Error:",
-                                    invoice.analysis.date.error
+                                    invoice.analysis.date.error,
                                   )
                                 }
                               >
@@ -365,7 +388,7 @@ export const InvoiceList = ({
                                 onClick={() =>
                                   console.error(
                                     "🔍 Sender Analysis Error:",
-                                    invoice.analysis.sender.error
+                                    invoice.analysis.sender.error,
                                   )
                                 }
                               >
@@ -392,7 +415,7 @@ export const InvoiceList = ({
                               onClick={() =>
                                 console.error(
                                   "💰 Amount Analysis Error:",
-                                  invoice.analysis.amount.error
+                                  invoice.analysis.amount.error,
                                 )
                               }
                             >
@@ -428,7 +451,7 @@ export const InvoiceList = ({
                                   onClick={() =>
                                     console.error(
                                       "📝 Classic Parsing Error:",
-                                      invoice.parsing.parsedText.error
+                                      invoice.parsing.parsedText.error,
                                     )
                                   }
                                   title={`Classic Error: ${invoice.parsing.parsedText.error}`}
@@ -468,7 +491,7 @@ export const InvoiceList = ({
                                   onClick={() =>
                                     console.error(
                                       "📝 AI Parsing Error:",
-                                      invoice.analysis.parsedText.error
+                                      invoice.analysis.parsedText.error,
                                     )
                                   }
                                   title={`AI Error: ${invoice.analysis.parsedText.error}`}
@@ -514,7 +537,9 @@ export const InvoiceList = ({
                         e.stopPropagation();
                         void deleteIncomingInvoice({
                           monthKey,
+                          invoiceId: invoice.invoiceId,
                           storageId: invoice.storageId,
+                          uploadedAt: invoice.uploadedAt,
                         });
                       }}
                     >

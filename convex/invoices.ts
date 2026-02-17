@@ -11,28 +11,52 @@ const analysisResult = v.object({
   lastUpdated: v.union(v.number(), v.null()),
 });
 
-
 // Helper function to get filename without extension
 function getFileNameWithoutExtension(fileName: string): string {
-  const lastDotIndex = fileName.lastIndexOf('.');
+  const lastDotIndex = fileName.lastIndexOf(".");
   if (lastDotIndex === -1) {
     return fileName;
   }
   return fileName.substring(0, lastDotIndex);
 }
 
+function generateInvoiceId(): string {
+  return `inv_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function matchesInvoiceRow(
+  invoice: {
+    invoiceId?: string;
+    storageId: Id<"_storage">;
+    uploadedAt: number;
+  },
+  args: {
+    invoiceId?: string;
+    storageId: Id<"_storage">;
+    uploadedAt?: number;
+  },
+): boolean {
+  if (args.invoiceId && invoice.invoiceId) {
+    return invoice.invoiceId === args.invoiceId;
+  }
+  if (args.uploadedAt !== undefined) {
+    return (
+      invoice.storageId === args.storageId &&
+      invoice.uploadedAt === args.uploadedAt
+    );
+  }
+  return invoice.storageId === args.storageId;
+}
+
 // Helper to safely delete a file from storage, ignoring missing files
-async function safeDeleteStorage(
-  ctx: any,
-  storageId: Id<"_storage">
-) {
+async function safeDeleteStorage(ctx: any, storageId: Id<"_storage">) {
   try {
     const url = await ctx.storage.getUrl(storageId);
     if (url) {
       await ctx.storage.delete(storageId);
     }
   } catch (error) {
-    console.warn('Failed to delete file from storage.', error);
+    console.warn("Failed to delete file from storage.", error);
   }
 }
 
@@ -41,7 +65,7 @@ export const migrateInvoiceNames = internalMutation({
   args: {},
   handler: async (ctx) => {
     const allMonths = await ctx.db.query("months").collect();
-    
+
     for (const month of allMonths) {
       const updatedInvoices = month.incomingInvoices.map((invoice) => {
         if (!invoice.name) {
@@ -52,7 +76,7 @@ export const migrateInvoiceNames = internalMutation({
         }
         return invoice;
       });
-      
+
       await ctx.db.patch(month._id, {
         incomingInvoices: updatedInvoices,
       });
@@ -82,7 +106,7 @@ export const getMonthData = query({
     const monthData = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", userId).eq("monthKey", args.monthKey)
+        q.eq("userId", userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
@@ -99,19 +123,19 @@ export const getMonthData = query({
       monthData.incomingInvoices.map(async (invoice) => ({
         ...invoice,
         url: await ctx.storage.getUrl(invoice.storageId),
-      }))
+      })),
     );
 
     const statementsWithUrls = await Promise.all(
       monthData.statements.map(async (statement) => ({
         ...statement,
         url: await ctx.storage.getUrl(statement.storageId),
-      }))
+      })),
     );
 
     // Sort invoices by uploadedAt in descending order (latest first)
     const sortedInvoices = incomingInvoicesWithUrls.sort(
-      (a, b) => b.uploadedAt - a.uploadedAt
+      (a, b) => b.uploadedAt - a.uploadedAt,
     );
 
     return {
@@ -128,6 +152,7 @@ export const addIncomingInvoice = mutation({
     monthKey: v.string(),
     storageId: v.id("_storage"),
     fileName: v.string(),
+    fileHash: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -138,45 +163,60 @@ export const addIncomingInvoice = mutation({
     const existing = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", userId).eq("monthKey", args.monthKey)
+        q.eq("userId", userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
+    const duplicateSource =
+      existing && args.fileHash
+        ? existing.incomingInvoices.find(
+            (invoice) => invoice.fileHash && invoice.fileHash === args.fileHash,
+          )
+        : null;
+
     const newInvoice = {
-      storageId: args.storageId,
+      invoiceId: generateInvoiceId(),
+      storageId: duplicateSource?.storageId ?? args.storageId,
       fileName: args.fileName,
       name: getFileNameWithoutExtension(args.fileName),
+      fileHash: args.fileHash,
+      isDuplicate: Boolean(duplicateSource),
+      duplicateOfStorageId: duplicateSource?.storageId,
       uploadedAt: Date.now(),
-      analysis: {
-        date: {
-          value: null,
-          error: null,
-          lastUpdated: null,
-        },
-        sender: {
-          value: null,
-          error: null,
-          lastUpdated: null,
-        },
-        parsedText: {
-          value: null,
-          error: null,
-          lastUpdated: null,
-        },
-        amount: {
-          value: null,
-          error: null,
-          lastUpdated: null,
-        },
-        analysisBigError: null,
-      },
-      parsing: {
-        parsedText: {
-          value: null,
-          error: null,
-          lastUpdated: null,
-        },
-      },
+      analysis: duplicateSource
+        ? duplicateSource.analysis
+        : {
+            date: {
+              value: null,
+              error: null,
+              lastUpdated: null,
+            },
+            sender: {
+              value: null,
+              error: null,
+              lastUpdated: null,
+            },
+            parsedText: {
+              value: null,
+              error: null,
+              lastUpdated: null,
+            },
+            amount: {
+              value: null,
+              error: null,
+              lastUpdated: null,
+            },
+            analysisBigError: null,
+          },
+      parsing: duplicateSource
+        ? duplicateSource.parsing
+        : {
+            parsedText: {
+              value: null,
+              error: null,
+              lastUpdated: null,
+            },
+          },
     };
 
     if (existing) {
@@ -193,19 +233,25 @@ export const addIncomingInvoice = mutation({
       });
     }
 
-    // Always trigger background analysis - the analysis action will check the feature flag
-    await ctx.scheduler.runAfter(0, internal.invoiceAnalysis.analyzeInvoice, {
-      monthKey: args.monthKey,
-      storageId: args.storageId,
-      userId,
-    });
+    if (duplicateSource && duplicateSource.storageId !== args.storageId) {
+      await safeDeleteStorage(ctx, args.storageId);
+    }
 
-    // Always trigger background parsing - the parsing action will check the feature flag
-    await ctx.scheduler.runAfter(0, internal.invoiceParsing.parseInvoice, {
-      monthKey: args.monthKey,
-      storageId: args.storageId,
-      userId,
-    });
+    if (!duplicateSource) {
+      // Always trigger background analysis - the analysis action will check the feature flag
+      await ctx.scheduler.runAfter(0, internal.invoiceAnalysis.analyzeInvoice, {
+        monthKey: args.monthKey,
+        storageId: args.storageId,
+        userId,
+      });
+
+      // Always trigger background parsing - the parsing action will check the feature flag
+      await ctx.scheduler.runAfter(0, internal.invoiceParsing.parseInvoice, {
+        monthKey: args.monthKey,
+        storageId: args.storageId,
+        userId,
+      });
+    }
   },
 });
 
@@ -226,7 +272,7 @@ export const addStatement = mutation({
     const existing = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", userId).eq("monthKey", args.monthKey)
+        q.eq("userId", userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
@@ -262,7 +308,9 @@ export const addStatement = mutation({
 export const deleteIncomingInvoice = mutation({
   args: {
     monthKey: v.string(),
+    invoiceId: v.optional(v.string()),
     storageId: v.id("_storage"),
+    uploadedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -273,17 +321,32 @@ export const deleteIncomingInvoice = mutation({
     const existing = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", userId).eq("monthKey", args.monthKey)
+        q.eq("userId", userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
     if (existing) {
+      const targetInvoice = existing.incomingInvoices.find((invoice) =>
+        matchesInvoiceRow(invoice, args),
+      );
+      if (!targetInvoice) {
+        return;
+      }
+
+      const remainingInvoices = existing.incomingInvoices.filter(
+        (invoice) => !matchesInvoiceRow(invoice, args),
+      );
+
       await ctx.db.patch(existing._id, {
-        incomingInvoices: existing.incomingInvoices.filter(
-          (inv) => inv.storageId !== args.storageId
-        ),
+        incomingInvoices: remainingInvoices,
       });
-      await safeDeleteStorage(ctx, args.storageId);
+
+      const isStorageStillReferenced = remainingInvoices.some(
+        (invoice) => invoice.storageId === targetInvoice.storageId,
+      );
+      if (!isStorageStillReferenced) {
+        await safeDeleteStorage(ctx, targetInvoice.storageId);
+      }
     }
   },
 });
@@ -302,14 +365,14 @@ export const deleteStatement = mutation({
     const existing = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", userId).eq("monthKey", args.monthKey)
+        q.eq("userId", userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
     if (existing) {
       await ctx.db.patch(existing._id, {
         statements: existing.statements.filter(
-          (stmt) => stmt.storageId !== args.storageId
+          (stmt) => stmt.storageId !== args.storageId,
         ),
       });
       await safeDeleteStorage(ctx, args.storageId);
@@ -332,7 +395,7 @@ export const updateInvoiceAnalysis = internalMutation({
     const monthData = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
+        q.eq("userId", args.userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
@@ -373,7 +436,7 @@ export const updateInvoiceDate = internalMutation({
     const monthData = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
+        q.eq("userId", args.userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
@@ -411,7 +474,7 @@ export const updateInvoiceSender = internalMutation({
     const monthData = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
+        q.eq("userId", args.userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
@@ -450,7 +513,7 @@ export const updateInvoiceParsedText = internalMutation({
     const monthData = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
+        q.eq("userId", args.userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
@@ -480,7 +543,9 @@ export const updateInvoiceParsedText = internalMutation({
 export const updateInvoiceName = mutation({
   args: {
     monthKey: v.string(),
+    invoiceId: v.optional(v.string()),
     storageId: v.id("_storage"),
+    uploadedAt: v.optional(v.number()),
     name: v.string(),
   },
   handler: async (ctx, args) => {
@@ -492,7 +557,7 @@ export const updateInvoiceName = mutation({
     const monthData = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", userId).eq("monthKey", args.monthKey)
+        q.eq("userId", userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
@@ -501,7 +566,7 @@ export const updateInvoiceName = mutation({
     }
 
     const updatedInvoices = monthData.incomingInvoices.map((invoice) => {
-      if (invoice.storageId === args.storageId) {
+      if (matchesInvoiceRow(invoice, args)) {
         return {
           ...invoice,
           name: args.name,
@@ -527,7 +592,7 @@ export const updateInvoiceAmount = internalMutation({
     const monthData = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
+        q.eq("userId", args.userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
@@ -565,7 +630,7 @@ export const updateInvoiceAnalysisBigError = internalMutation({
     const monthData = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", args.userId).eq("monthKey", args.monthKey)
+        q.eq("userId", args.userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
@@ -593,10 +658,10 @@ export const updateInvoiceAnalysisBigError = internalMutation({
 });
 
 function parseCsvTransactions(csvText: string) {
-  const lines = csvText.split('\n').filter(line => line.trim());
+  const lines = csvText.split("\n").filter((line) => line.trim());
   if (lines.length < 2) return [];
 
-  const headers = lines[0].split(',').map(h => h.trim());
+  const headers = lines[0].split(",").map((h) => h.trim());
   const transactions = [];
 
   for (let i = 1; i < lines.length; i++) {
@@ -605,37 +670,37 @@ function parseCsvTransactions(csvText: string) {
 
     // Simple CSV parsing - split by comma and handle quoted fields
     const values = parseCsvLine(line);
-    
+
     if (values.length >= headers.length) {
       const transaction = {
-        id: values[2] || '', // ID column
-        dateStarted: values[0] || '',
-        dateCompleted: values[1] || '',
-        type: values[3] || '',
-        state: values[4] || '',
-        description: values[5] || '',
-        reference: values[6] || '',
-        payer: values[7] || '',
-        cardNumber: values[8] || '',
-        cardLabel: values[9] || '',
-        cardState: values[10] || '',
-        origCurrency: values[11] || '',
-        origAmount: values[12] || '',
-        paymentCurrency: values[13] || '',
-        amount: values[14] || '',
-        totalAmount: values[15] || '',
-        exchangeRate: values[16] || '',
-        fee: values[17] || '',
-        feeCurrency: values[18] || '',
-        balance: values[19] || '',
-        account: values[20] || '',
-        beneficiaryAccountNumber: values[21] || '',
-        beneficiarySortCode: values[22] || '',
-        beneficiaryIban: values[23] || '',
-        beneficiaryBic: values[24] || '',
-        mcc: values[25] || '',
-        relatedTransactionId: values[26] || '',
-        spendProgram: values[27] || '',
+        id: values[2] || "", // ID column
+        dateStarted: values[0] || "",
+        dateCompleted: values[1] || "",
+        type: values[3] || "",
+        state: values[4] || "",
+        description: values[5] || "",
+        reference: values[6] || "",
+        payer: values[7] || "",
+        cardNumber: values[8] || "",
+        cardLabel: values[9] || "",
+        cardState: values[10] || "",
+        origCurrency: values[11] || "",
+        origAmount: values[12] || "",
+        paymentCurrency: values[13] || "",
+        amount: values[14] || "",
+        totalAmount: values[15] || "",
+        exchangeRate: values[16] || "",
+        fee: values[17] || "",
+        feeCurrency: values[18] || "",
+        balance: values[19] || "",
+        account: values[20] || "",
+        beneficiaryAccountNumber: values[21] || "",
+        beneficiarySortCode: values[22] || "",
+        beneficiaryIban: values[23] || "",
+        beneficiaryBic: values[24] || "",
+        mcc: values[25] || "",
+        relatedTransactionId: values[26] || "",
+        spendProgram: values[27] || "",
       };
       transactions.push(transaction);
     }
@@ -646,12 +711,12 @@ function parseCsvTransactions(csvText: string) {
 
 function parseCsvLine(line: string): string[] {
   const result = [];
-  let current = '';
+  let current = "";
   let inQuotes = false;
-  
+
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
-    
+
     if (char === '"') {
       if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
         // Handle escaped quotes
@@ -660,14 +725,14 @@ function parseCsvLine(line: string): string[] {
       } else {
         inQuotes = !inQuotes;
       }
-    } else if (char === ',' && !inQuotes) {
+    } else if (char === "," && !inQuotes) {
       result.push(current.trim());
-      current = '';
+      current = "";
     } else {
       current += char;
     }
   }
-  
+
   result.push(current.trim());
   return result;
 }
@@ -683,7 +748,7 @@ export const getMergedTransactions = query({
     const monthData = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", userId).eq("monthKey", args.monthKey)
+        q.eq("userId", userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
@@ -736,7 +801,7 @@ export const getMergedTransactions = query({
     if (userSettings?.manualTransactions) {
       const manualTransactions = parseManualTransactions(
         userSettings.manualTransactions,
-        bindingMap
+        bindingMap,
       );
       sortedTransactions.push(...manualTransactions);
     }
@@ -747,51 +812,51 @@ export const getMergedTransactions = query({
 
 function parseManualTransactions(
   text: string,
-  bindingMap: Map<string, string | null>
+  bindingMap: Map<string, string | null>,
 ) {
-  const lines = text.split('\n').filter(line => line.trim());
+  const lines = text.split("\n").filter((line) => line.trim());
   const transactions = [];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
 
-    const parts = line.split(',').map(p => p.trim());
-    const name = parts[0] || '';
-    const amount = parts[1] || '';
+    const parts = line.split(",").map((p) => p.trim());
+    const name = parts[0] || "";
+    const amount = parts[1] || "";
 
     if (name) {
       const id = `manual_transaction_${i}`;
       transactions.push({
         id,
-        dateStarted: '',
-        dateCompleted: '',
-        type: 'MANUAL',
-        state: '',
+        dateStarted: "",
+        dateCompleted: "",
+        type: "MANUAL",
+        state: "",
         description: name,
-        reference: '',
-        payer: '',
-        cardNumber: '',
-        cardLabel: '',
-        cardState: '',
-        origCurrency: '',
-        origAmount: '',
-        paymentCurrency: '',
-        amount: amount || '',
-        totalAmount: '',
-        exchangeRate: '',
-        fee: '',
-        feeCurrency: '',
-        balance: '',
-        account: '',
-        beneficiaryAccountNumber: '',
-        beneficiarySortCode: '',
-        beneficiaryIban: '',
-        beneficiaryBic: '',
-        mcc: '',
-        relatedTransactionId: '',
-        spendProgram: '',
-        sourceFile: 'Manual',
+        reference: "",
+        payer: "",
+        cardNumber: "",
+        cardLabel: "",
+        cardState: "",
+        origCurrency: "",
+        origAmount: "",
+        paymentCurrency: "",
+        amount: amount || "",
+        totalAmount: "",
+        exchangeRate: "",
+        fee: "",
+        feeCurrency: "",
+        balance: "",
+        account: "",
+        beneficiaryAccountNumber: "",
+        beneficiarySortCode: "",
+        beneficiaryIban: "",
+        beneficiaryBic: "",
+        mcc: "",
+        relatedTransactionId: "",
+        spendProgram: "",
+        sourceFile: "Manual",
         boundInvoiceStorageId: bindingMap.get(id) || null,
       });
     }
@@ -813,7 +878,7 @@ export const deleteAllStatements = mutation({
     const monthData = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", userId).eq("monthKey", args.monthKey)
+        q.eq("userId", userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
@@ -847,7 +912,7 @@ export const deleteAllInvoices = mutation({
     const monthData = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", userId).eq("monthKey", args.monthKey)
+        q.eq("userId", userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
@@ -855,9 +920,12 @@ export const deleteAllInvoices = mutation({
       return;
     }
 
-    // Delete all invoice files from storage
-    for (const invoice of monthData.incomingInvoices) {
-      await safeDeleteStorage(ctx, invoice.storageId);
+    // Delete all unique invoice files from storage
+    const storageIds = new Set(
+      monthData.incomingInvoices.map((invoice) => invoice.storageId),
+    );
+    for (const storageId of storageIds) {
+      await safeDeleteStorage(ctx, storageId);
     }
 
     // Clear incoming invoices array
@@ -871,7 +939,11 @@ export const bindTransactionToInvoice = mutation({
   args: {
     monthKey: v.string(),
     transactionId: v.string(),
-    invoiceStorageId: v.union(v.id("_storage"), v.literal("NOT_NEEDED"), v.null()),
+    invoiceStorageId: v.union(
+      v.id("_storage"),
+      v.literal("NOT_NEEDED"),
+      v.null(),
+    ),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -882,7 +954,7 @@ export const bindTransactionToInvoice = mutation({
     const monthData = await ctx.db
       .query("months")
       .withIndex("by_user_and_month", (q) =>
-        q.eq("userId", userId).eq("monthKey", args.monthKey)
+        q.eq("userId", userId).eq("monthKey", args.monthKey),
       )
       .unique();
 
@@ -892,7 +964,7 @@ export const bindTransactionToInvoice = mutation({
 
     const existingBindings = monthData.transactionInvoiceBindings || [];
     const updatedBindings = existingBindings.filter(
-      (binding) => binding.transactionId !== args.transactionId
+      (binding) => binding.transactionId !== args.transactionId,
     );
 
     // Add new binding if invoiceStorageId is not null (includes "NOT_NEEDED")
