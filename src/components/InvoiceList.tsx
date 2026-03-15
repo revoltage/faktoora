@@ -213,17 +213,18 @@ export const InvoiceList = ({
       );
     }
 
-    // Use classic parsing first, fallback to AI analysis
-    const parsedText =
-      invoice.parsing.parsedText.value || invoice.analysis.parsedText.value;
+    const classicParsedText = invoice.parsing.parsedText.value;
+    const aiParsedText = invoice.analysis.parsedText.value;
 
-    if (!parsedText) {
+    if (!classicParsedText && !aiParsedText) {
       return <span className="text-[9px] text-gray-400">No parsed text</span>;
     }
 
-    const vatCheck = checkVatIdInText(parsedText, userSettings.vatId);
+    const vatCheck = [classicParsedText, aiParsedText]
+      .filter((text): text is string => Boolean(text))
+      .some((text) => checkVatIdInText(text, userSettings.vatId).found);
 
-    if (vatCheck.found) {
+    if (vatCheck) {
       return (
         <span className="text-[9px] text-green-600 font-base">
           <CheckIcon className="inline-block  w-3 h-3 pb-1" /> VAT OK
