@@ -228,7 +228,7 @@ export const StatementsSection = ({
         {statements.length > 0 && (
           <div>
             <Separator className="mt-1 mb-2" />
-            <TransactionList monthKey={monthKey} />
+            <TransactionList monthKey={monthKey} showOriginalAmount={false} />
           </div>
         )}
       </CardContent>

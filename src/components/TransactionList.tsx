@@ -27,7 +27,15 @@ const cfg = {
   ],
 };
 
-export function TransactionList({ monthKey }: { monthKey: string }) {
+type TransactionListProps = {
+  monthKey: string;
+  showOriginalAmount?: boolean;
+};
+
+export function TransactionList({
+  monthKey,
+  showOriginalAmount = false,
+}: TransactionListProps) {
   const transactions = useQuery(api.invoices.getMergedTransactions, {
     monthKey,
   });
@@ -261,7 +269,8 @@ export function TransactionList({ monthKey }: { monthKey: string }) {
                   <div className={`font-semibold text-xs ${getAmountColor(transaction.amount)}`}>
                     {formatAmount(transaction.amount, transaction.paymentCurrency)}
                   </div>
-                  {transaction.origAmount && transaction.origAmount !== transaction.amount && (
+                  {showOriginalAmount &&
+                    transaction.origAmount && transaction.origAmount !== transaction.amount && (
                     <div className='text-[9px] text-muted-foreground'>
                       {formatAmount(transaction.origAmount, transaction.origCurrency)}
                     </div>
