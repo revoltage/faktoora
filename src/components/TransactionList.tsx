@@ -35,6 +35,149 @@ type TransactionListProps = {
   showOriginalAmount?: boolean;
 };
 
+type TransactionRowProps = {
+  transaction: any;
+  compact?: boolean;
+  muted?: boolean;
+  showOriginalAmount: boolean;
+  helperLinks: string[];
+  onClick: () => void;
+  onBindingClick: (e: React.MouseEvent) => void;
+  formatAmount: (amount: string, currency: string) => string;
+  formatDate: (dateString: string) => string;
+  getAmountColor: (amount: string) => string;
+  getTransactionIcon: (type: string) => string;
+  transactionNeedsInvoice: (transaction: any) => boolean;
+};
+
+function TransactionRow({
+  transaction,
+  compact = false,
+  muted = false,
+  showOriginalAmount,
+  helperLinks,
+  onClick,
+  onBindingClick,
+  formatAmount,
+  formatDate,
+  getAmountColor,
+  getTransactionIcon,
+  transactionNeedsInvoice,
+}: TransactionRowProps) {
+  return (
+    <div
+      className={`flex items-center justify-between py-1 hover:bg-gray-50 transition-colors cursor-pointer -mx-2 pl-2 rounded-lg ${muted ? "opacity-80" : ""}`}
+      onClick={onClick}
+    >
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <span className={`${compact ? "text-sm" : "text-base"} flex-shrink-0`}>
+          {getTransactionIcon(transaction.type)}
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
+            <span
+              className={`font-medium truncate text-xs ${transaction.isRefunded ? "line-through text-gray-400" : "text-foreground"}`}
+            >
+              {transaction.description || "No description"}
+            </span>
+            <Badge
+              variant="outline"
+              className="uppercase text-[8px] text-gray-500 px-1 py-0 shadow-none"
+            >
+              {transaction.type}
+            </Badge>
+          </div>
+
+          {!compact && (
+            <div className="flex items-center gap-2 sm:gap-3 text-[9px] text-muted-foreground min-w-0">
+              <span className="whitespace-nowrap">
+                {formatDate(
+                  transaction.dateCompleted || transaction.dateStarted,
+                )}
+              </span>
+
+              {transactionNeedsInvoice(transaction) ? (
+                helperLinks.length > 0 && (
+                  <div className="flex min-w-0 flex-1 gap-1 overflow-hidden">
+                    {helperLinks.map((link, linkIndex) => (
+                      <a
+                        key={linkIndex}
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-blue-600 hover:text-blue-800 hover:underline text-[9px] truncate max-w-[6rem] inline-block"
+                        title={link}
+                      >
+                        {link.replace(/^https?:\/\//, "")}
+                      </a>
+                    ))}
+                  </div>
+                )
+              ) : (
+                <span className="text-gray-400 text-[9px] italic">
+                  Doesn't need invoice
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+        <div className="flex flex-col items-end text-right">
+          <div
+            className={`font-semibold text-xs ${getAmountColor(transaction.amount)}`}
+          >
+            {formatAmount(transaction.amount, transaction.paymentCurrency)}
+          </div>
+          {showOriginalAmount &&
+            transaction.origAmount &&
+            transaction.origAmount !== transaction.amount && (
+              <div className="text-[9px] text-muted-foreground">
+                {formatAmount(transaction.origAmount, transaction.origCurrency)}
+              </div>
+            )}
+        </div>
+
+        {transactionNeedsInvoice(transaction) ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBindingClick}
+            className={`h-8 w-8 p-0 rounded-full ${
+              transaction.boundInvoiceStorageId === NOT_NEEDED
+                ? "text-gray-400/50 hover:text-gray-500/50"
+                : transaction.boundInvoiceStorageId
+                  ? "text-green-600 hover:text-green-700"
+                  : "text-orange-500 hover:text-orange-600"
+            }`}
+            title={
+              transaction.boundInvoiceStorageId === NOT_NEEDED
+                ? "Invoice not needed (click to change)"
+                : transaction.boundInvoiceStorageId
+                  ? "Change invoice binding"
+                  : "Bind to invoice"
+            }
+          >
+            {transaction.boundInvoiceStorageId === NOT_NEEDED ? (
+              <FileX className="h-5 w-5 rounded-full" />
+            ) : transaction.boundInvoiceStorageId ? (
+              <CheckCircle className="h-5 w-5 rounded-full" />
+            ) : (
+              <AlertCircle className="h-5 w-5 rounded-full" />
+            )}
+          </Button>
+        ) : (
+          <div className="h-8 w-8 flex items-center justify-center">
+            <Minus className="h-4 w-4 text-gray-300 rounded-full" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function TransactionList({
   monthKey,
   showOriginalAmount = false,
@@ -233,122 +376,24 @@ export function TransactionList({
       <div className="space-y-0">
         {displayTransactions.map((transaction, index) => {
           const helperLinks = findHelperLinks(transaction.description || "");
+          const isSolved = Boolean(transaction.boundInvoiceStorageId);
 
           return (
-            <div
+            <TransactionRow
               key={`${transaction.id}-${index}`}
-              className="flex items-center justify-between py-1 hover:bg-gray-50 transition-colors cursor-pointer -mx-2 pl-2 rounded-lg"
+              transaction={transaction}
+              compact={isSolved}
+              muted={isSolved}
+              showOriginalAmount={showOriginalAmount}
+              helperLinks={helperLinks}
               onClick={() => handleTransactionClick(transaction)}
-            >
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="text-base flex-shrink-0">
-                  {getTransactionIcon(transaction.type)}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
-                    <span
-                      className={`font-medium truncate text-xs ${transaction.isRefunded ? "line-through text-gray-400" : "text-foreground"}`}
-                    >
-                      {transaction.description || "No description"}
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className="uppercase text-[8px] text-gray-500 px-1 py-0 shadow-none"
-                    >
-                      {transaction.type}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2 sm:gap-3 text-[9px] text-muted-foreground min-w-0">
-                    <span className="whitespace-nowrap">
-                      {formatDate(
-                        transaction.dateCompleted || transaction.dateStarted,
-                      )}
-                    </span>
-
-                    {transactionNeedsInvoice(transaction) ? (
-                      helperLinks.length > 0 && (
-                        <div className="flex min-w-0 flex-1 gap-1 overflow-hidden">
-                          {helperLinks.map((link, linkIndex) => (
-                            <a
-                              key={linkIndex}
-                              href={link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-blue-600 hover:text-blue-800 hover:underline text-[9px] truncate max-w-[6rem] inline-block"
-                              title={link}
-                            >
-                              {link.replace(/^https?:\/\//, "")}
-                            </a>
-                          ))}
-                        </div>
-                      )
-                    ) : (
-                      <span className="text-gray-400 text-[9px] italic">
-                        Doesn't need invoice
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                <div className="flex flex-col items-end text-right">
-                  <div
-                    className={`font-semibold text-xs ${getAmountColor(transaction.amount)}`}
-                  >
-                    {formatAmount(
-                      transaction.amount,
-                      transaction.paymentCurrency,
-                    )}
-                  </div>
-                  {showOriginalAmount &&
-                    transaction.origAmount &&
-                    transaction.origAmount !== transaction.amount && (
-                      <div className="text-[9px] text-muted-foreground">
-                        {formatAmount(
-                          transaction.origAmount,
-                          transaction.origCurrency,
-                        )}
-                      </div>
-                    )}
-                </div>
-
-                {/* Binding button - only show for transactions that need invoices */}
-                {transactionNeedsInvoice(transaction) ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => handleBindingClick(transaction, e)}
-                    className={`h-8 w-8 p-0 rounded-full ${
-                      transaction.boundInvoiceStorageId === NOT_NEEDED
-                        ? "text-gray-400/50 hover:text-gray-500/50"
-                        : transaction.boundInvoiceStorageId
-                          ? "text-green-600 hover:text-green-700"
-                          : "text-orange-500 hover:text-orange-600"
-                    }`}
-                    title={
-                      transaction.boundInvoiceStorageId === NOT_NEEDED
-                        ? "Invoice not needed (click to change)"
-                        : transaction.boundInvoiceStorageId
-                          ? "Change invoice binding"
-                          : "Bind to invoice"
-                    }
-                  >
-                    {transaction.boundInvoiceStorageId === NOT_NEEDED ? (
-                      <FileX className="h-5 w-5 rounded-full" />
-                    ) : transaction.boundInvoiceStorageId ? (
-                      <CheckCircle className="h-5 w-5 rounded-full" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 rounded-full" />
-                    )}
-                  </Button>
-                ) : (
-                  <div className="h-8 w-8 flex items-center justify-center">
-                    <Minus className="h-4 w-4 text-gray-300 rounded-full" />
-                  </div>
-                )}
-              </div>
-            </div>
+              onBindingClick={(e) => handleBindingClick(transaction, e)}
+              formatAmount={formatAmount}
+              formatDate={formatDate}
+              getAmountColor={getAmountColor}
+              getTransactionIcon={getTransactionIcon}
+              transactionNeedsInvoice={transactionNeedsInvoice}
+            />
           );
         })}
       </div>
