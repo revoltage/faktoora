@@ -66,23 +66,27 @@ function TransactionRow({
 }: TransactionRowProps) {
   return (
     <div
-      className={`flex items-center justify-between py-1 hover:bg-gray-50 transition-colors cursor-pointer -mx-2 pl-2 rounded-lg ${muted ? "opacity-80" : ""}`}
+      className={`flex items-center justify-between ${compact ? "py-0.5" : "py-1"} hover:bg-gray-50 transition-colors cursor-pointer -mx-2 pl-2 rounded-lg ${muted ? "opacity-80" : ""}`}
       onClick={onClick}
     >
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <span className={`${compact ? "text-sm" : "text-base"} flex-shrink-0`}>
+      <div
+        className={`flex items-center ${compact ? "gap-1.5" : "gap-2"} flex-1 min-w-0`}
+      >
+        <span className={`${compact ? "text-xs" : "text-base"} flex-shrink-0`}>
           {getTransactionIcon(transaction.type)}
         </span>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
+          <div
+            className={`flex items-center gap-1.5 min-w-0 ${compact ? "" : "mb-0.5"}`}
+          >
             <span
-              className={`font-medium truncate text-xs ${transaction.isRefunded ? "line-through text-gray-400" : "text-foreground"}`}
+              className={`font-medium truncate ${compact ? "text-[11px] leading-tight" : "text-xs"} ${transaction.isRefunded ? "line-through text-gray-400" : "text-foreground"}`}
             >
               {transaction.description || "No description"}
             </span>
             <Badge
               variant="outline"
-              className="uppercase text-[8px] text-gray-500 px-1 py-0 shadow-none"
+              className={`uppercase text-gray-500 shadow-none ${compact ? "text-[7px] px-1 py-0 leading-none" : "text-[8px] px-1 py-0"}`}
             >
               {transaction.type}
             </Badge>
@@ -124,10 +128,12 @@ function TransactionRow({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+      <div
+        className={`flex items-center ${compact ? "gap-1.5 ml-2" : "gap-2 ml-3"} flex-shrink-0`}
+      >
         <div className="flex flex-col items-end text-right">
           <div
-            className={`font-semibold text-xs ${getAmountColor(transaction.amount)}`}
+            className={`font-semibold ${compact ? "text-[11px] leading-none" : "text-xs"} ${getAmountColor(transaction.amount)}`}
           >
             {formatAmount(transaction.amount, transaction.paymentCurrency)}
           </div>
@@ -145,7 +151,7 @@ function TransactionRow({
             variant="ghost"
             size="sm"
             onClick={onBindingClick}
-            className={`h-8 w-8 p-0 rounded-full ${
+            className={`${compact ? "h-6 w-6" : "h-8 w-8"} p-0 rounded-full ${
               transaction.boundInvoiceStorageId === NOT_NEEDED
                 ? "text-gray-400/50 hover:text-gray-500/50"
                 : transaction.boundInvoiceStorageId
@@ -161,16 +167,26 @@ function TransactionRow({
             }
           >
             {transaction.boundInvoiceStorageId === NOT_NEEDED ? (
-              <FileX className="h-5 w-5 rounded-full" />
+              <FileX
+                className={`${compact ? "h-4 w-4" : "h-5 w-5"} rounded-full`}
+              />
             ) : transaction.boundInvoiceStorageId ? (
-              <CheckCircle className="h-5 w-5 rounded-full" />
+              <CheckCircle
+                className={`${compact ? "h-4 w-4" : "h-5 w-5"} rounded-full`}
+              />
             ) : (
-              <AlertCircle className="h-5 w-5 rounded-full" />
+              <AlertCircle
+                className={`${compact ? "h-4 w-4" : "h-5 w-5"} rounded-full`}
+              />
             )}
           </Button>
         ) : (
-          <div className="h-8 w-8 flex items-center justify-center">
-            <Minus className="h-4 w-4 text-gray-300 rounded-full" />
+          <div
+            className={`${compact ? "h-6 w-6" : "h-8 w-8"} flex items-center justify-center`}
+          >
+            <Minus
+              className={`${compact ? "h-3.5 w-3.5" : "h-4 w-4"} text-gray-300 rounded-full`}
+            />
           </div>
         )}
       </div>
