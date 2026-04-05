@@ -66,7 +66,7 @@ function TransactionRow({
 }: TransactionRowProps) {
   return (
     <div
-      className={`flex items-center justify-between ${compact ? "py-0.5" : "py-1"} hover:bg-gray-50 transition-colors cursor-pointer -mx-2 pl-2 rounded-lg ${muted ? "opacity-80" : ""}`}
+      className={`flex items-center justify-between ${compact ? "py-0 px-1.5" : "py-1 pl-2"} hover:bg-gray-50 transition-colors cursor-pointer -mx-2 rounded-lg ${muted ? "opacity-80" : ""}`}
       onClick={onClick}
     >
       <div
