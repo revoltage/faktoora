@@ -1,12 +1,14 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
-
-const analysisResult = v.object({
-  value: v.union(v.string(), v.null()),
-  error: v.union(v.string(), v.null()),
-  lastUpdated: v.union(v.number(), v.null()),
-});
+import {
+  legacyInvoiceValidator,
+  legacyStatementValidator,
+  legacyTransactionBindingValidator,
+  normalizedInvoiceValidator,
+  normalizedStatementValidator,
+  normalizedTransactionBindingValidator,
+} from "./monthData";
 
 const applicationTables = {
   userSettings: defineTable({
@@ -26,83 +28,32 @@ const applicationTables = {
   months: defineTable({
     userId: v.id("users"),
     monthKey: v.string(), // Format: "YYYY-MM"
-    incomingInvoices: v.array(
-      v.object({
-        invoiceId: v.optional(v.string()),
-        storageId: v.id("_storage"),
-        fileName: v.string(),
-        name: v.optional(v.string()),
-        fileHash: v.optional(v.string()),
-        isDuplicate: v.optional(v.boolean()),
-        duplicateOfStorageId: v.optional(v.id("_storage")),
-        uploadedAt: v.number(),
-        analysis: v.object({
-          date: analysisResult,
-          sender: analysisResult,
-          parsedText: analysisResult,
-          amount: analysisResult,
-          analysisBigError: v.union(v.string(), v.null()),
-        }),
-        parsing: v.object({
-          parsedText: analysisResult,
-        }),
-      }),
-    ),
-    transactionInvoiceBindings: v.array(
-      v.object({
-        transactionId: v.string(),
-        // null = not bound, "NOT_NEEDED" = invoice explicitly not needed, or storage ID
-        invoiceStorageId: v.union(
-          v.id("_storage"),
-          v.literal("NOT_NEEDED"),
-          v.null(),
-        ),
-        boundAt: v.number(),
-      }),
-    ),
-    statements: v.array(
-      v.object({
-        storageId: v.id("_storage"),
-        fileName: v.string(),
-        fileType: v.union(v.literal("pdf"), v.literal("csv")),
-        uploadedAt: v.number(),
-        transactions: v.optional(
-          v.array(
-            v.object({
-              id: v.string(),
-              dateStarted: v.string(),
-              dateCompleted: v.string(),
-              type: v.string(),
-              state: v.string(),
-              description: v.string(),
-              reference: v.string(),
-              payer: v.string(),
-              cardNumber: v.string(),
-              cardLabel: v.string(),
-              cardState: v.string(),
-              origCurrency: v.string(),
-              origAmount: v.string(),
-              paymentCurrency: v.string(),
-              amount: v.string(),
-              totalAmount: v.string(),
-              exchangeRate: v.string(),
-              fee: v.string(),
-              feeCurrency: v.string(),
-              balance: v.string(),
-              account: v.string(),
-              beneficiaryAccountNumber: v.string(),
-              beneficiarySortCode: v.string(),
-              beneficiaryIban: v.string(),
-              beneficiaryBic: v.string(),
-              mcc: v.string(),
-              relatedTransactionId: v.string(),
-              spendProgram: v.string(),
-            }),
-          ),
-        ),
-      }),
-    ),
+    incomingInvoices: v.array(legacyInvoiceValidator),
+    transactionInvoiceBindings: v.array(legacyTransactionBindingValidator),
+    statements: v.array(legacyStatementValidator),
   }).index("by_user_and_month", ["userId", "monthKey"]),
+  incomingInvoices: defineTable(normalizedInvoiceValidator)
+    .index("by_user_and_month", ["userId", "monthKey"])
+    .index("by_user_month_and_invoice_id", ["userId", "monthKey", "invoiceId"])
+    .index("by_user_month_and_storage_id", ["userId", "monthKey", "storageId"])
+    .index("by_legacy_key", ["legacyKey"]),
+  statements: defineTable(normalizedStatementValidator)
+    .index("by_user_and_month", ["userId", "monthKey"])
+    .index("by_user_month_and_statement_id", [
+      "userId",
+      "monthKey",
+      "statementId",
+    ])
+    .index("by_user_month_and_storage_id", ["userId", "monthKey", "storageId"])
+    .index("by_legacy_key", ["legacyKey"]),
+  transactionInvoiceBindings: defineTable(normalizedTransactionBindingValidator)
+    .index("by_user_and_month", ["userId", "monthKey"])
+    .index("by_user_month_and_transaction_id", [
+      "userId",
+      "monthKey",
+      "transactionId",
+    ])
+    .index("by_legacy_key", ["legacyKey"]),
 };
 
 export default defineSchema({
