@@ -31,6 +31,12 @@ type NormalizedInvoice = Doc<"incomingInvoices">;
 type NormalizedStatement = Doc<"statements">;
 type NormalizedBinding = Doc<"transactionInvoiceBindings">;
 
+export type InvoiceVatStatus =
+  | "not_configured"
+  | "no_parsed_text"
+  | "found"
+  | "missing";
+
 export async function listNormalizedInvoices(
   ctx: DbCtx,
   userId: Id<"users">,
@@ -87,6 +93,7 @@ export async function getMonthDataFromNormalized(
   ctx: Required<DbCtx>,
   userId: Id<"users">,
   monthKey: string,
+  userVatId?: string,
 ) {
   const [incomingInvoices, statements, transactionInvoiceBindings] =
     await Promise.all([
@@ -98,6 +105,7 @@ export async function getMonthDataFromNormalized(
   const incomingInvoicesWithUrls = await Promise.all(
     incomingInvoices.map(async (invoice) => ({
       ...invoice,
+      vatStatus: getInvoiceVatStatus(invoice, userVatId),
       url: await ctx.storage.getUrl(invoice.storageId),
     })),
   );
@@ -115,6 +123,41 @@ export async function getMonthDataFromNormalized(
     statements: statementsWithUrls,
     transactionInvoiceBindings,
   };
+}
+
+function getInvoiceVatStatus(
+  invoice: NormalizedInvoice,
+  userVatId?: string,
+): InvoiceVatStatus {
+  if (!userVatId?.trim()) {
+    return "not_configured";
+  }
+
+  const classicParsedText = normalizeParsedText(
+    invoice.parsing.parsedText.value,
+  );
+  const aiParsedText = normalizeParsedText(invoice.analysis.parsedText.value);
+
+  if (!classicParsedText && !aiParsedText) {
+    return "no_parsed_text";
+  }
+
+  return [classicParsedText, aiParsedText]
+    .filter((text): text is string => Boolean(text))
+    .some((text) => hasVatIdInText(text, userVatId))
+    ? "found"
+    : "missing";
+}
+
+function normalizeParsedText(parsedText: string | null): string | null {
+  const normalizedText = parsedText?.trim();
+  return normalizedText ? normalizedText : null;
+}
+
+function hasVatIdInText(parsedText: string, userVatId: string): boolean {
+  const normalizedText = parsedText.replace(/\s+/g, "").toLowerCase();
+  const normalizedVatId = userVatId.replace(/\s+/g, "").toLowerCase();
+  return normalizedText.includes(normalizedVatId);
 }
 
 export async function getMergedTransactionsFromNormalized(

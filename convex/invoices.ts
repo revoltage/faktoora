@@ -72,7 +72,17 @@ export const getMonthData = query({
       return null;
     }
 
-    return await getMonthDataFromNormalized(ctx, userId, args.monthKey);
+    const userSettings = await ctx.db
+      .query("userSettings")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    return await getMonthDataFromNormalized(
+      ctx,
+      userId,
+      args.monthKey,
+      userSettings?.vatId,
+    );
   },
 });
 

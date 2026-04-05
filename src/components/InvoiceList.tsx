@@ -1,10 +1,7 @@
-import { useQuery } from "convex/react";
 import { CheckIcon, XIcon, Loader2, CircleAlertIcon } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-
-import { api } from "../../convex/_generated/api";
 
 import {
   AlertDialog,
@@ -19,7 +16,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { checkVatIdInText } from "@/lib/vatIdChecker";
 import { cn } from "@/lib/utils";
 
 interface UploadingInvoice {
@@ -83,7 +79,6 @@ export const InvoiceList = ({
 }: InvoiceListProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
-  const userSettings = useQuery(api.userSettings.getUserSettings);
 
   // Create a set of bound invoice storage IDs
   const boundInvoiceIds = new Set(
@@ -204,8 +199,7 @@ export const InvoiceList = ({
   };
 
   const renderVatIdStatus = (invoice: any) => {
-    // Check if VAT ID is configured in settings
-    if (!userSettings?.vatId) {
+    if (invoice.vatStatus === "not_configured") {
       return (
         <span className="text-[9px] text-gray-500 bg-gray-100 px-2 py-0 rounded border">
           No VAT ID set
@@ -213,18 +207,11 @@ export const InvoiceList = ({
       );
     }
 
-    const classicParsedText = invoice.parsing.parsedText.value;
-    const aiParsedText = invoice.analysis.parsedText.value;
-
-    if (!classicParsedText && !aiParsedText) {
+    if (invoice.vatStatus === "no_parsed_text") {
       return <span className="text-[9px] text-gray-400">No parsed text</span>;
     }
 
-    const vatCheck = [classicParsedText, aiParsedText]
-      .filter((text): text is string => Boolean(text))
-      .some((text) => checkVatIdInText(text, userSettings.vatId).found);
-
-    if (vatCheck) {
+    if (invoice.vatStatus === "found") {
       return (
         <span className="text-[9px] text-green-600 font-base">
           <CheckIcon className="inline-block  w-3 h-3 pb-1" /> VAT OK

@@ -178,7 +178,7 @@ export const StatementsSection = ({
                 input.multiple = true;
                 input.onchange = (e) => {
                   const files = Array.from(
-                    (e.target as HTMLInputElement).files || []
+                    (e.target as HTMLInputElement).files || [],
                   );
                   for (const file of files) {
                     void handleUploadStatement(file, "csv");
@@ -208,7 +208,7 @@ export const StatementsSection = ({
             e.target.value = "";
           }}
         />
-        
+
         {statements.length === 0 ? (
           <p className="text-xs text-muted-foreground">
             No statements uploaded yet
