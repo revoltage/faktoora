@@ -10,6 +10,11 @@ import { StatementsSection } from "../components/StatementsSection";
 import { EmailDraft } from "../components/EmailDraft";
 import { Button } from "../components/ui/button";
 import { useFeatureFlagsDebugSetter } from "../hooks/useFeatureFlags";
+import {
+  currentMonthKey,
+  formatMonthDisplay,
+  monthKeyFromPath,
+} from "../lib/dateFormat";
 
 interface UploadingInvoice {
   fileName: string;
@@ -17,26 +22,11 @@ interface UploadingInvoice {
 }
 
 export function InvoiceManagerPage() {
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const path = window.location.pathname;
-    if (path === "/") {
-      const now = new Date();
-      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    }
-    return path.substring(1);
-  });
+  const [currentMonth, setCurrentMonth] = useState(() => monthKeyFromPath());
 
   useEffect(() => {
     const handlePopState = () => {
-      const path = window.location.pathname;
-      if (path === "/") {
-        const now = new Date();
-        setCurrentMonth(
-          `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
-        );
-      } else {
-        setCurrentMonth(path.substring(1));
-      }
+      setCurrentMonth(monthKeyFromPath());
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -52,16 +42,14 @@ export function InvoiceManagerPage() {
     const [year, month] = currentMonth.split("-").map(Number);
     const date = new Date(year, month - 1, 1);
     date.setMonth(date.getMonth() - 1);
-    const newMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    navigateToMonth(newMonth);
+    navigateToMonth(currentMonthKey(date));
   };
 
   const goToNextMonth = () => {
     const [year, month] = currentMonth.split("-").map(Number);
     const date = new Date(year, month - 1, 1);
     date.setMonth(date.getMonth() + 1);
-    const newMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    navigateToMonth(newMonth);
+    navigateToMonth(currentMonthKey(date));
   };
 
   return (
