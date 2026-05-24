@@ -4,36 +4,7 @@ import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { parsePdfFromBlob } from "./lib/pdfParser";
-
-function detectFileType(buffer: ArrayBuffer): string {
-  const arr = new Uint8Array(buffer).subarray(0, 12);
-  
-  // PDF: %PDF
-  if (arr[0] === 0x25 && arr[1] === 0x50 && arr[2] === 0x44 && arr[3] === 0x46) {
-    return "application/pdf";
-  }
-  
-  // PNG: 89 50 4E 47 0D 0A 1A 0A
-  if (arr[0] === 0x89 && arr[1] === 0x50 && arr[2] === 0x4E && arr[3] === 0x47) {
-    return "image/png";
-  }
-  
-  // JPEG: FF D8 FF
-  if (arr[0] === 0xFF && arr[1] === 0xD8 && arr[2] === 0xFF) {
-    return "image/jpeg";
-  }
-  
-  // WEBP: RIFF ... WEBP
-  if (
-    arr[0] === 0x52 && arr[1] === 0x49 && arr[2] === 0x46 && arr[3] === 0x46 &&
-    arr[8] === 0x57 && arr[9] === 0x45 && arr[10] === 0x42 && arr[11] === 0x50
-  ) {
-    return "image/webp";
-  }
-  
-  // Default to PDF if unknown
-  return "application/pdf";
-}
+import { detectFileType } from "./lib/fileType";
 
 export const parseInvoice = internalAction({
   args: {

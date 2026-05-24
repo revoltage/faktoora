@@ -9,6 +9,7 @@ import { openai } from "@ai-sdk/openai";
 import { groq } from "@ai-sdk/groq";
 import { google } from "@ai-sdk/google";
 import { FEATURE_FLAGS } from "./featureFlags";
+import { detectFileType } from "./lib/fileType";
 
 export const analyzeInvoice = internalAction({
   args: {
@@ -69,7 +70,7 @@ export const analyzeInvoice = internalAction({
       const response = await fetch(fileUrl);
       const fileBlob = await response.blob();
       const fileBuffer = await fileBlob.arrayBuffer();
-      
+
       const fileType = detectFileType(fileBuffer);
       console.log(`📎 Detected file type: ${fileType}`);
 
@@ -152,36 +153,6 @@ const AI_MODELS = {
   gemini: google("gemini-2.5-flash"),
 } as const;
 
-function detectFileType(buffer: ArrayBuffer): string {
-  const arr = new Uint8Array(buffer).subarray(0, 12);
-  
-  // PDF: %PDF
-  if (arr[0] === 0x25 && arr[1] === 0x50 && arr[2] === 0x44 && arr[3] === 0x46) {
-    return "application/pdf";
-  }
-  
-  // PNG: 89 50 4E 47 0D 0A 1A 0A
-  if (arr[0] === 0x89 && arr[1] === 0x50 && arr[2] === 0x4E && arr[3] === 0x47) {
-    return "image/png";
-  }
-  
-  // JPEG: FF D8 FF
-  if (arr[0] === 0xFF && arr[1] === 0xD8 && arr[2] === 0xFF) {
-    return "image/jpeg";
-  }
-  
-  // WEBP: RIFF ... WEBP
-  if (
-    arr[0] === 0x52 && arr[1] === 0x49 && arr[2] === 0x46 && arr[3] === 0x46 &&
-    arr[8] === 0x57 && arr[9] === 0x45 && arr[10] === 0x42 && arr[11] === 0x50
-  ) {
-    return "image/webp";
-  }
-  
-  // Default to PDF if unknown
-  return "application/pdf";
-}
-
 async function askLLM(
   prompt: string,
   fileBuffer: ArrayBuffer,
@@ -194,7 +165,7 @@ async function askLLM(
   const now = Date.now();
   try {
     const mediaType = detectFileType(fileBuffer);
-    
+
     const result = await generateText({
       model: AI_MODELS[modelKey],
       messages: [
