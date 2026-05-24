@@ -39,12 +39,6 @@ export const StatementsSection = ({
   const statementInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const formatMonthDisplay = (monthKey: string) => {
-    const [year, month] = monthKey.split("-");
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
-  };
-
   const handleDeleteAllStatements = async () => {
     if (!deleteAllStatements) return;
     try {

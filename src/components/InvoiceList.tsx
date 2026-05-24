@@ -100,12 +100,6 @@ export const InvoiceList = ({
     return aBound ? 1 : -1;
   });
 
-  const formatMonthDisplay = (monthKey: string) => {
-    const [year, month] = monthKey.split("-");
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
-  };
-
   const handleDeleteAllInvoices = async () => {
     if (!deleteAllInvoices) return;
     try {

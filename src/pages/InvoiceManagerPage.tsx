@@ -64,12 +64,6 @@ export function InvoiceManagerPage() {
     navigateToMonth(newMonth);
   };
 
-  const formatMonthDisplay = (monthKey: string) => {
-    const [year, month] = monthKey.split("-");
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       <Header
