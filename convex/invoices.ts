@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import {
   analysisResultValidator,
@@ -27,14 +28,14 @@ import {
   patchNormalizedInvoicesByStorageId,
 } from "./normalizedMonthStore";
 
-async function safeDeleteStorage(ctx: any, storageId: Id<"_storage">) {
+async function safeDeleteStorage(
+  ctx: MutationCtx,
+  storageId: Id<"_storage">,
+) {
   try {
-    const url = await ctx.storage.getUrl(storageId);
-    if (url) {
-      await ctx.storage.delete(storageId);
-    }
+    await ctx.storage.delete(storageId);
   } catch (error) {
-    console.warn("Failed to delete file from storage.", error);
+    console.warn("🗑️ Failed to delete file from storage.", error);
   }
 }
 
