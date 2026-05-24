@@ -7,7 +7,7 @@ This project is connected to the Convex deployment named [`elegant-grasshopper-9
   
 ## Project structure
   
-The frontend code is in the `app` directory and is built with [Vite](https://vitejs.dev/).
+The frontend code is in the `src` directory and is built with [Vite](https://vitejs.dev/).
   
 The backend code is in the `convex` directory.
   
