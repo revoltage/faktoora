@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatMonthDisplay } from "@/lib/dateFormat";
 import { cn } from "@/lib/utils";
 
 interface UploadingInvoice {
