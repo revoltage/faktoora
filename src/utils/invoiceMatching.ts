@@ -1,31 +1,20 @@
+import { parseInvoiceAmount } from "@/lib/currency";
+
 // ===========================================
 // SCORING CONFIGURATION - easy to adjust
 // ===========================================
 const SCORING_CONFIG = {
   // Weight distribution (should sum to 1.0)
   weights: {
-    amount: 0.7,  // How important is amount matching (0-1)
-    name: 0.3,    // How important is name/description matching (0-1)
+    amount: 0.7, // How important is amount matching (0-1)
+    name: 0.3, // How important is name/description matching (0-1)
   },
   // Amount scoring parameters
   amount: {
-    perfectMatchThreshold: 0.01,  // Amounts within 1% are considered perfect
-    maxDeviationPercent: 50,      // Beyond 50% deviation, score is 0
+    perfectMatchThreshold: 0.01, // Amounts within 1% are considered perfect
+    maxDeviationPercent: 50, // Beyond 50% deviation, score is 0
   },
 };
-
-/**
- * Parse invoice amount from format "EUR|123.45" or "123.45"
- */
-function parseInvoiceAmount(amountStr: string | undefined): { currency?: string; value: number } | null {
-  if (!amountStr) return null;
-  const parts = amountStr.split("|");
-  if (parts.length === 2) {
-    return { currency: parts[0], value: parseFloat(parts[1]) };
-  }
-  const val = parseFloat(amountStr);
-  return isNaN(val) ? null : { value: val };
-}
 
 /**
  * Simple fuzzy string similarity (0-1)
@@ -43,8 +32,8 @@ function fuzzyMatch(str1: string, str2: string): number {
   if (s1.includes(s2) || s2.includes(s1)) return 0.8;
 
   // Token-based matching
-  const tokens1 = s1.split(/[\s\-_.,]+/).filter(t => t.length > 2);
-  const tokens2 = s2.split(/[\s\-_.,]+/).filter(t => t.length > 2);
+  const tokens1 = s1.split(/[\s\-_.,]+/).filter((t) => t.length > 2);
+  const tokens2 = s2.split(/[\s\-_.,]+/).filter((t) => t.length > 2);
 
   if (tokens1.length === 0 || tokens2.length === 0) return 0;
 
@@ -67,8 +56,15 @@ function fuzzyMatch(str1: string, str2: string): number {
  * Calculate match score between transaction and invoice (0-1)
  */
 export function calculateMatchScore(
-  transaction: { amount?: string; paymentCurrency?: string; description?: string } | null | undefined,
-  invoice: { name?: string; fileName?: string; analysis?: { amount?: { value?: string } } }
+  transaction:
+    | { amount?: string; paymentCurrency?: string; description?: string }
+    | null
+    | undefined,
+  invoice: {
+    name?: string;
+    fileName?: string;
+    analysis?: { amount?: { value?: string | null } };
+  },
 ): number {
   if (!transaction) return 0;
 
@@ -77,12 +73,13 @@ export function calculateMatchScore(
   let amountScore = 0;
   let nameScore = 0;
 
-  // Amount scoring
+  // Amount scoring — invoice values are stored as "amount|currency"
+  // (e.g. "50.80|BGN"); reuse the shared parser to avoid format drift.
   const txAmount = transaction.amount ? parseFloat(transaction.amount) : null;
   const invAmountData = parseInvoiceAmount(invoice.analysis?.amount?.value);
 
   if (txAmount && invAmountData) {
-    const invAmount = invAmountData.value;
+    const invAmount = invAmountData.amount;
     const diff = Math.abs(txAmount - invAmount);
     const percentDiff = (diff / Math.max(txAmount, invAmount)) * 100;
 
@@ -92,7 +89,7 @@ export function calculateMatchScore(
       amountScore = 0;
     } else {
       // Linear interpolation between perfect and max deviation
-      amountScore = 1 - (percentDiff / amountConfig.maxDeviationPercent);
+      amountScore = 1 - percentDiff / amountConfig.maxDeviationPercent;
     }
   }
 
@@ -102,5 +99,5 @@ export function calculateMatchScore(
   nameScore = fuzzyMatch(txDesc, invName);
 
   // Weighted combination
-  return (amountScore * weights.amount) + (nameScore * weights.name);
+  return amountScore * weights.amount + nameScore * weights.name;
 }
