@@ -55,6 +55,9 @@ export function MonthSummary({
   let invoiceCount = 0;
 
   for (const inv of invoices) {
+    // Duplicate uploads inherit the source's analysis; counting them
+    // would double-count the same logical invoice.
+    if (inv.isDuplicate) continue;
     const parsed = parseInvoiceAmount(inv.analysis?.amount?.value);
     if (parsed) {
       invoiceEur += toEur(parsed.amount, parsed.currency);
