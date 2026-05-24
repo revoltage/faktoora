@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMonthDisplay } from "@/lib/dateFormat";
+import type { IncomingInvoice, StorageId, TransactionBinding } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface UploadingInvoice {
@@ -24,21 +25,32 @@ interface UploadingInvoice {
   uploadId: string;
 }
 
+type GenerateUploadUrlFn = () => Promise<string>;
+type AddIncomingInvoiceFn = (args: {
+  monthKey: string;
+  storageId: StorageId;
+  fileName: string;
+  fileHash?: string;
+}) => Promise<unknown>;
+type DeleteIncomingInvoiceFn = (args: {
+  monthKey: string;
+  invoiceId?: string;
+  storageId: StorageId;
+  uploadedAt?: number;
+}) => Promise<unknown>;
+type DeleteAllInvoicesFn = (args: { monthKey: string }) => Promise<unknown>;
+
 interface InvoiceListProps {
   monthKey: string;
-  incomingInvoices: any[];
+  incomingInvoices: IncomingInvoice[];
   uploadingInvoices: UploadingInvoice[];
-  generateUploadUrl: any;
-  addIncomingInvoice: any;
-  deleteIncomingInvoice: any;
-  onInvoiceClick: (invoice: any) => void;
+  generateUploadUrl: GenerateUploadUrlFn;
+  addIncomingInvoice: AddIncomingInvoiceFn;
+  deleteIncomingInvoice: DeleteIncomingInvoiceFn;
+  onInvoiceClick: (invoice: IncomingInvoice) => void;
   onUploadingStateChange: Dispatch<SetStateAction<UploadingInvoice[]>>;
-  deleteAllInvoices?: any;
-  transactionInvoiceBindings: Array<{
-    transactionId: string;
-    invoiceStorageId: string | null;
-    boundAt: number;
-  }>;
+  deleteAllInvoices?: DeleteAllInvoicesFn;
+  transactionInvoiceBindings: TransactionBinding[];
 }
 
 const InvoiceSkeleton = ({ fileName }: { fileName: string }) => (
@@ -85,11 +97,13 @@ export const InvoiceList = ({
   const boundInvoiceIds = new Set(
     transactionInvoiceBindings
       .map((binding) => binding.invoiceStorageId)
-      .filter((id): id is string => id !== null),
+      .filter(
+        (id): id is StorageId => id !== null && id !== "NOT_NEEDED",
+      ),
   );
 
   // Check if an invoice is bound
-  const isInvoiceBound = (invoice: any) => {
+  const isInvoiceBound = (invoice: IncomingInvoice) => {
     return boundInvoiceIds.has(invoice.storageId);
   };
 
@@ -193,7 +207,7 @@ export const InvoiceList = ({
     });
   };
 
-  const renderVatIdStatus = (invoice: any) => {
+  const renderVatIdStatus = (invoice: IncomingInvoice) => {
     if (invoice.vatStatus === "not_configured") {
       return (
         <span className="text-[9px] text-gray-500 bg-gray-100 px-2 py-0 rounded border">

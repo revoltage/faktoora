@@ -13,6 +13,7 @@ import { TransactionListFooter } from "@/components/TransactionListFooter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getInvoiceHelperLinks } from "@/lib/transactionHelperLinks";
+import type { MergedTransaction } from "@/lib/types";
 
 const cfg = {
   // Filtering constants
@@ -36,7 +37,7 @@ type TransactionListProps = {
 };
 
 type TransactionRowProps = {
-  transaction: any;
+  transaction: MergedTransaction;
   compact?: boolean;
   muted?: boolean;
   showOriginalAmount: boolean;
@@ -47,7 +48,7 @@ type TransactionRowProps = {
   formatDate: (dateString: string) => string;
   getAmountColor: (amount: string) => string;
   getTransactionIcon: (type: string) => string;
-  transactionNeedsInvoice: (transaction: any) => boolean;
+  transactionNeedsInvoice: (transaction: MergedTransaction) => boolean;
 };
 
 function TransactionRow({
@@ -201,10 +202,10 @@ export function TransactionList({
   const transactions = useQuery(api.invoices.getMergedTransactions, {
     monthKey,
   });
-  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<MergedTransaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showFiltered, setShowFiltered] = useState(true);
-  const [bindingTransaction, setBindingTransaction] = useState<any>(null);
+  const [bindingTransaction, setBindingTransaction] = useState<MergedTransaction | null>(null);
   const [isBindingModalOpen, setIsBindingModalOpen] = useState(false);
 
   if (!transactions) {
@@ -216,7 +217,7 @@ export function TransactionList({
   }
 
   // Helper function to check if a transaction needs an invoice
-  const transactionNeedsInvoice = (transaction: any) => {
+  const transactionNeedsInvoice = (transaction: MergedTransaction) => {
     // Refunded transactions don't need invoices
     if (transaction.isRefunded) {
       return false;
@@ -324,7 +325,7 @@ export function TransactionList({
     }
   };
 
-  const handleTransactionClick = (transaction: any) => {
+  const handleTransactionClick = (transaction: MergedTransaction) => {
     setSelectedTransaction(transaction);
     setIsModalOpen(true);
   };
@@ -334,7 +335,7 @@ export function TransactionList({
     setSelectedTransaction(null);
   };
 
-  const handleBindingClick = (transaction: any, e: React.MouseEvent) => {
+  const handleBindingClick = (transaction: MergedTransaction, e: React.MouseEvent) => {
     e.stopPropagation();
     setBindingTransaction(transaction);
     setIsBindingModalOpen(true);

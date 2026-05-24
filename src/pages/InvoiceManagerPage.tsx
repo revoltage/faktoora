@@ -15,6 +15,7 @@ import {
   formatMonthDisplay,
   monthKeyFromPath,
 } from "../lib/dateFormat";
+import type { IncomingInvoice } from "../lib/types";
 
 interface UploadingInvoice {
   fileName: string;
@@ -110,10 +111,10 @@ export function InvoiceManagerPageContent({
   const [uploadingInvoices, setUploadingInvoices] = useState<
     UploadingInvoice[]
   >([]);
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<IncomingInvoice | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const openInvoiceModal = (invoice: any) => {
+  const openInvoiceModal = (invoice: IncomingInvoice) => {
     setSelectedInvoice(invoice);
     setIsModalOpen(true);
   };
@@ -123,7 +124,7 @@ export function InvoiceManagerPageContent({
     setSelectedInvoice(null);
   };
 
-  const handleDeleteInvoice = async (invoice: any) => {
+  const handleDeleteInvoice = async (invoice: IncomingInvoice) => {
     try {
       await deleteIncomingInvoice({
         monthKey: currentMonth,
@@ -138,7 +139,7 @@ export function InvoiceManagerPageContent({
     }
   };
 
-  const handleUpdateInvoiceName = async (invoice: any, name: string) => {
+  const handleUpdateInvoiceName = async (invoice: IncomingInvoice, name: string) => {
     try {
       await updateInvoiceName({
         monthKey: currentMonth,

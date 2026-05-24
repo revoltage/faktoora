@@ -12,13 +12,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import type { IncomingInvoice } from "@/lib/types";
 
 interface InvoiceDetailsModalProps {
-  invoice: any;
+  invoice: IncomingInvoice | null;
   isOpen: boolean;
   onClose: () => void;
-  onDelete: (invoice: any) => Promise<void>;
-  onUpdateName: (invoice: any, name: string) => Promise<void>;
+  onDelete: (invoice: IncomingInvoice) => Promise<void>;
+  onUpdateName: (invoice: IncomingInvoice, name: string) => Promise<void>;
   monthKey: string;
 }
 
@@ -46,7 +47,7 @@ export const InvoiceDetailsModal = ({
     });
   };
 
-  const getStatusBadge = (section: any, field: string) => {
+  const getStatusBadge = (section: Record<string, { value: string | null; error: string | null; lastUpdated: number | null } | undefined> | undefined, field: string) => {
     const fieldData = section?.[field];
     if (!fieldData) {
       return (
@@ -231,21 +232,33 @@ export const InvoiceDetailsModal = ({
                       section: invoice.analysis,
                       field: "amount",
                     },
-                  ].map((item) => (
-                    <div key={item.label} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">
-                          {item.label}
-                        </span>
-                        {getStatusBadge(item.section, item.field)}
+                  ].map((item) => {
+                    const section = item.section as Record<
+                      string,
+                      | {
+                          value: string | null;
+                          error: string | null;
+                          lastUpdated: number | null;
+                        }
+                      | undefined
+                    > | undefined;
+                    const field = section?.[item.field];
+                    return (
+                      <div key={item.label} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">
+                            {item.label}
+                          </span>
+                          {getStatusBadge(section, item.field)}
+                        </div>
+                        {field?.error && (
+                          <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                            {field.error}
+                          </p>
+                        )}
                       </div>
-                      {item.section?.[item.field]?.error && (
-                        <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                          {item.section[item.field].error}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {invoice.analysis?.analysisBigError && (

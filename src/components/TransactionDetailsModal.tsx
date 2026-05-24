@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { MergedTransaction } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 
 interface TransactionDetailsModalProps {
-  transaction: any;
+  transaction: MergedTransaction | null;
   isOpen: boolean;
   onClose: () => void;
 }

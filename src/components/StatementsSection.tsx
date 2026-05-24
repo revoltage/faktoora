@@ -21,12 +21,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatMonthDisplay } from "@/lib/dateFormat";
+import type { StatementDoc } from "@/lib/types";
+
+type GenerateUploadUrlFn = () => Promise<string>;
+type DeleteAllStatementsFn = (args: { monthKey: string }) => Promise<unknown>;
 
 interface StatementsSectionProps {
   monthKey: string;
-  statements: any[];
-  generateUploadUrl: any;
-  deleteAllStatements?: any;
+  statements: StatementDoc[];
+  generateUploadUrl: GenerateUploadUrlFn;
+  deleteAllStatements?: DeleteAllStatementsFn;
 }
 
 export const StatementsSection = ({
@@ -235,7 +239,7 @@ function StatementItem({
   statement,
   onClickDelete,
 }: {
-  statement: any;
+  statement: StatementDoc;
   onClickDelete: () => unknown;
 }) {
   return (

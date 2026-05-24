@@ -2,6 +2,7 @@ import { useQuery } from "convex/react";
 import { Fragment } from "react";
 import { api } from "../../convex/_generated/api";
 import { toEur, fromEur, parseInvoiceAmount } from "@/lib/currency";
+import type { IncomingInvoice } from "@/lib/types";
 
 const DISPLAY_CURRENCIES = ['EUR', 'USD', 'BGN'] as const;
 
@@ -14,7 +15,7 @@ export function MonthSummary({
   invoices,
 }: {
   monthKey: string;
-  invoices: any[];
+  invoices: IncomingInvoice[];
 }) {
   const transactions = useQuery(api.invoices.getMergedTransactions, {
     monthKey,

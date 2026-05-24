@@ -5,10 +5,11 @@ import { api } from "../../convex/_generated/api";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { IncomingInvoice, StatementDoc } from "@/lib/types";
 
 interface EmailDraftProps {
-  invoices: any[];
-  statements: any[];
+  invoices: IncomingInvoice[];
+  statements: StatementDoc[];
   monthKey: string;
   uploadingInvoices?: { fileName: string; uploadId: string }[];
 }
@@ -86,9 +87,11 @@ export const EmailDraft = ({
       toast.info(`📂 Choose a parent folder...`);
 
       // Request directory access
-      const dirHandle = await (window as any).showDirectoryPicker({
-        mode: 'readwrite'
-      });
+      // File System Access API: showDirectoryPicker is non-standard and may not exist.
+      const showDirectoryPicker = (window as unknown as {
+        showDirectoryPicker: (opts: { mode: 'readwrite' }) => Promise<FileSystemDirectoryHandle>;
+      }).showDirectoryPicker;
+      const dirHandle = await showDirectoryPicker({ mode: 'readwrite' });
 
       // Get or create the subfolder
       let subfolderHandle = await dirHandle.getDirectoryHandle(folderName, { create: true });
@@ -97,6 +100,7 @@ export const EmailDraft = ({
       
       // Download all files to the subfolder
       for (const file of filesToDownload) {
+        if (!file.url) continue;
         try {
           const response = await fetch(file.url);
           const blob = await response.blob();
@@ -112,8 +116,9 @@ export const EmailDraft = ({
       }
       
       toast.success(`✅ All files saved to "${folderName}"`);
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
+    } catch (error: unknown) {
+      const errName = (error as { name?: string } | null)?.name;
+      if (errName === 'AbortError') {
         toast.info("💭 Download cancelled");
       } else {
         toast.error("❌ Failed to download all files");
@@ -195,8 +200,8 @@ export const EmailDraft = ({
 
 // Utility function to create both email content and subject
 function createEmailContent(
-  invoices: any[],
-  statements: any[],
+  invoices: IncomingInvoice[],
+  statements: StatementDoc[],
   monthKey: string
 ) {
   // Parse month from monthKey (format: "YYYY-MM")

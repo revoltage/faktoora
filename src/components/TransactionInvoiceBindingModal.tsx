@@ -4,6 +4,7 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 
 import { Button } from "@/components/ui/button";
+import type { MergedTransaction } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +19,7 @@ export const NOT_NEEDED = "NOT_NEEDED" as const;
 interface TransactionInvoiceBindingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  transaction: any;
+  transaction: MergedTransaction | null;
   monthKey: string;
 }
 
@@ -74,7 +75,7 @@ export function TransactionInvoiceBindingModal({
   const invoicesWithScores = (monthData.incomingInvoices || []).map(
     (invoice) => ({
       ...invoice,
-      matchScore: calculateMatchScore(transaction, invoice as any),
+      matchScore: calculateMatchScore(transaction, invoice),
       isBoundToOther: boundToOtherTransactions.has(invoice.storageId),
     }),
   );
