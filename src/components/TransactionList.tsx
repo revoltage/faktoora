@@ -294,7 +294,7 @@ export function TransactionList({
     if (!amount || amount === "") return "";
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount)) return amount;
-    return `${currency} ${numAmount.toFixed(2)}`;
+    return `${numAmount.toFixed(2)} ${currency}`.trim();
   };
 
   const formatDate = (dateString: string) => {
