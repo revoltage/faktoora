@@ -39,6 +39,34 @@ async function safeDeleteStorage(
   }
 }
 
+async function deleteBindingsForInvoiceStorageIds(
+  ctx: any,
+  userId: Id<"users">,
+  monthKey: string,
+  storageIds: Set<Id<"_storage">>,
+) {
+  if (storageIds.size === 0) {
+    return;
+  }
+
+  const bindings = await ctx.db
+    .query("transactionInvoiceBindings")
+    .withIndex("by_user_and_month", (q: any) =>
+      q.eq("userId", userId).eq("monthKey", monthKey),
+    )
+    .collect();
+
+  for (const binding of bindings) {
+    if (
+      binding.invoiceStorageId !== null &&
+      binding.invoiceStorageId !== "NOT_NEEDED" &&
+      storageIds.has(binding.invoiceStorageId)
+    ) {
+      await ctx.db.delete(binding._id);
+    }
+  }
+}
+
 export const migrateInvoiceNames = internalMutation({
   args: {},
   handler: async (ctx) => {
@@ -238,6 +266,12 @@ export const deleteIncomingInvoice = mutation({
     );
 
     if (remainingInvoices.length === 0) {
+      await deleteBindingsForInvoiceStorageIds(
+        ctx,
+        userId,
+        args.monthKey,
+        new Set([targetInvoice.storageId]),
+      );
       await safeDeleteStorage(ctx, targetInvoice.storageId);
     }
   },
@@ -520,6 +554,13 @@ export const deleteAllInvoices = mutation({
     for (const invoice of invoices) {
       await ctx.db.delete(invoice._id);
     }
+
+    await deleteBindingsForInvoiceStorageIds(
+      ctx,
+      userId,
+      args.monthKey,
+      storageIds,
+    );
   },
 });
 
