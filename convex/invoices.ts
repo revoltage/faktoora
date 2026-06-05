@@ -539,18 +539,26 @@ export const bindTransactionToInvoice = mutation({
       throw new Error("Not authenticated");
     }
 
+    const claimedInvoiceStorageId =
+      args.invoiceStorageId && args.invoiceStorageId !== "NOT_NEEDED"
+        ? args.invoiceStorageId
+        : null;
+
     const existingBindings = await ctx.db
       .query("transactionInvoiceBindings")
-      .withIndex("by_user_month_and_transaction_id", (q) =>
-        q
-          .eq("userId", userId)
-          .eq("monthKey", args.monthKey)
-          .eq("transactionId", args.transactionId),
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", userId).eq("monthKey", args.monthKey),
       )
       .collect();
 
     for (const binding of existingBindings) {
-      await ctx.db.delete(binding._id);
+      if (
+        binding.transactionId === args.transactionId ||
+        (claimedInvoiceStorageId !== null &&
+          binding.invoiceStorageId === claimedInvoiceStorageId)
+      ) {
+        await ctx.db.delete(binding._id);
+      }
     }
 
     if (!args.invoiceStorageId) {
