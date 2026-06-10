@@ -399,7 +399,7 @@ export function TransactionList({
             <TransactionRow
               key={`${transaction.id}-${index}`}
               transaction={transaction}
-              compact={isSolved}
+              compact={showFiltered && isSolved}
               muted={isSolved}
               showOriginalAmount={showOriginalAmount}
               helperLinks={helperLinks}
