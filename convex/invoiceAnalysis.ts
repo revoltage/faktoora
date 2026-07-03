@@ -150,7 +150,7 @@ const AI_MODELS = {
   kimi: groq("moonshotai/kimi-k2-instruct-0905"),
   gptoss: groq("openai/gpt-oss-120b"),
   llama3: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
-  gemini: google("gemini-2.5-flash"),
+  gemini: google("gemini-3.5-flash"),
 } as const;
 
 async function askLLM(
