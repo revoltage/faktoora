@@ -17,7 +17,7 @@ const payload = files.map((name) => {
 });
 
 console.log(
-  `Found ${payload.length} files: ${payload.filter((f) => f.type === "invoice").length} invoices, ${payload.filter((f) => f.type === "statement").length} statements`
+  `Found ${payload.length} files: ${payload.filter((f) => f.type === "invoice").length} invoices, ${payload.filter((f) => f.type === "statement").length} statements`,
 );
 
 // Write args to a temp file to avoid CLI arg length limits
@@ -25,10 +25,13 @@ const tmpFile = join(tmpdir(), `seed-mock-${Date.now()}.json`);
 writeFileSync(tmpFile, JSON.stringify({ files: payload }));
 
 try {
-  const result = execSync(`npx convex run seed:seedMockData --args "$(cat ${tmpFile})"`, {
-    cwd: join(import.meta.dirname, ".."),
-    stdio: "inherit",
-  });
+  const result = execSync(
+    `npx convex run seed:seedMockData --args "$(cat ${tmpFile})"`,
+    {
+      cwd: join(import.meta.dirname, ".."),
+      stdio: "inherit",
+    },
+  );
 } finally {
   unlinkSync(tmpFile);
 }

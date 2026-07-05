@@ -1,0 +1,5 @@
+dist
+node_modules
+convex/_generated
+pnpm-lock.yaml
+.agents

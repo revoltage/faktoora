@@ -1,7 +1,5 @@
 {
   "node": {
-    "externalPackages": [
-      "pdf-parse"
-    ]
+    "externalPackages": ["pdf-parse"]
   }
 }

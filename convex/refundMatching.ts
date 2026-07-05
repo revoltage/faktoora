@@ -24,14 +24,16 @@ interface Transaction {
  * Finds IDs of payments that were later refunded
  */
 export function findRefundedPaymentIds<T extends Transaction>(
-  transactions: T[]
+  transactions: T[],
 ): Set<string> {
   const refundedPaymentIds = new Set<string>();
 
   const refunds = transactions
-    .filter(t => t.type === 'CARD_REFUND')
-    .sort((a, b) =>
-      new Date(a.dateCompleted).getTime() - new Date(b.dateCompleted).getTime()
+    .filter((t) => t.type === "CARD_REFUND")
+    .sort(
+      (a, b) =>
+        new Date(a.dateCompleted).getTime() -
+        new Date(b.dateCompleted).getTime(),
     );
 
   for (const refund of refunds) {
@@ -40,16 +42,19 @@ export function findRefundedPaymentIds<T extends Transaction>(
 
     // Find matching payment: same amount, currency, mcc, before refund date, not already matched
     const matchingPayment = transactions
-      .filter(t =>
-        t.type === 'CARD_PAYMENT' &&
-        !refundedPaymentIds.has(t.id) &&
-        Math.abs(parseFloat(t.origAmount)) === refundAmount &&
-        t.origCurrency === refund.origCurrency &&
-        t.mcc === refund.mcc &&
-        new Date(t.dateCompleted || t.dateStarted) <= refundDate
+      .filter(
+        (t) =>
+          t.type === "CARD_PAYMENT" &&
+          !refundedPaymentIds.has(t.id) &&
+          Math.abs(parseFloat(t.origAmount)) === refundAmount &&
+          t.origCurrency === refund.origCurrency &&
+          t.mcc === refund.mcc &&
+          new Date(t.dateCompleted || t.dateStarted) <= refundDate,
       )
-      .sort((a, b) =>
-        new Date(b.dateCompleted).getTime() - new Date(a.dateCompleted).getTime()
+      .sort(
+        (a, b) =>
+          new Date(b.dateCompleted).getTime() -
+          new Date(a.dateCompleted).getTime(),
       )[0];
 
     if (matchingPayment) {
@@ -64,12 +69,12 @@ export function findRefundedPaymentIds<T extends Transaction>(
  * Adds isRefunded flag to each transaction
  */
 export function addRefundStatus<T extends Transaction>(
-  transactions: T[]
+  transactions: T[],
 ): (T & { isRefunded: boolean })[] {
   const refundedIds = findRefundedPaymentIds(transactions);
 
-  return transactions.map(t => ({
+  return transactions.map((t) => ({
     ...t,
-    isRefunded: refundedIds.has(t.id)
+    isRefunded: refundedIds.has(t.id),
   }));
 }

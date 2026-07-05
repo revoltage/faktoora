@@ -7,7 +7,7 @@ export interface ParsingResult {
 }
 
 export async function parsePdfFromBuffer(
-  buffer: Buffer
+  buffer: Buffer,
 ): Promise<ParsingResult> {
   try {
     const { PDFParse } = await import("pdf-parse");
