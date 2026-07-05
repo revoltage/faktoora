@@ -7,9 +7,6 @@ import {
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
-  buildInvoiceLegacyKey,
-  buildScopedLegacyKey,
-  buildStatementLegacyKey,
   createEmptyAnalysis,
   createEmptyParsing,
   generateInvoiceId,
@@ -19,41 +16,47 @@ import {
 } from "./monthData";
 
 // Convex-recommended seeding approach
-export const seedFeatureFlags = internalMutation(async (ctx) => {
-  console.log("🌱 Seeding feature flags...");
+export const seedFeatureFlags = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    console.log("🌱 Seeding feature flags...");
 
-  // Check if already seeded to avoid duplicates
-  const existingFlags = await ctx.db.query("featureFlags").collect();
-  if (existingFlags.length > 0) {
-    console.log("⏭️ Feature flags already seeded, skipping");
-    return;
-  }
+    // Check if already seeded to avoid duplicates
+    const existingFlags = await ctx.db.query("featureFlags").collect();
+    if (existingFlags.length > 0) {
+      console.log("⏭️ Feature flags already seeded, skipping");
+      return;
+    }
 
-  // Seed default feature flags
-  await ctx.db.insert("featureFlags", {
-    flagName: "invoiceAnalysis",
-    enabled: false, // Start with OFF as requested
-    description: "Enable AI-powered invoice analysis",
-    updatedAt: Date.now(),
-  });
+    // Seed default feature flags
+    await ctx.db.insert("featureFlags", {
+      flagName: "invoiceAnalysis",
+      enabled: false, // Start with OFF as requested
+      description: "Enable AI-powered invoice analysis",
+      updatedAt: Date.now(),
+    });
 
-  await ctx.db.insert("featureFlags", {
-    flagName: "invoiceParsing",
-    enabled: false, // Start with OFF as requested
-    description: "Enable invoice parsing functionality",
-    updatedAt: Date.now(),
-  });
+    await ctx.db.insert("featureFlags", {
+      flagName: "invoiceParsing",
+      enabled: false, // Start with OFF as requested
+      description: "Enable invoice parsing functionality",
+      updatedAt: Date.now(),
+    });
 
-  console.log("✅ Feature flags seeded successfully");
+    console.log("✅ Feature flags seeded successfully");
+  },
 });
 
 // --- Mock data seeding ---
 
-export const getLastUser = internalQuery(async (ctx) => {
-  const users = await ctx.db.query("users").collect();
-  if (users.length === 0) throw new Error("No users found");
-  // Return the most recently created user
-  return users[users.length - 1]._id;
+export const getLastUser = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    if (users.length === 0) throw new Error("No users found");
+    // Return the most recently created user
+    return users[users.length - 1]._id;
+  },
 });
 
 export const seedAddInvoice = internalMutation({
@@ -70,16 +73,6 @@ export const seedAddInvoice = internalMutation({
     await ctx.db.insert("incomingInvoices", {
       userId: args.userId,
       monthKey: args.monthKey,
-      legacyKey: buildScopedLegacyKey({
-        kind: "invoice",
-        userId: args.userId,
-        monthKey: args.monthKey,
-        legacyKey: buildInvoiceLegacyKey({
-          invoiceId,
-          storageId: args.storageId,
-          uploadedAt,
-        }),
-      }),
       invoiceId,
       storageId: args.storageId,
       fileName: args.fileName,
@@ -101,28 +94,31 @@ export const seedAddStatement = internalMutation({
   },
   handler: async (ctx, args) => {
     const uploadedAt = Date.now();
+    const statementId = generateStatementId();
+    const transactions = args.csvContent
+      ? parseCsvTransactions(args.csvContent)
+      : [];
 
     await ctx.db.insert("statements", {
       userId: args.userId,
       monthKey: args.monthKey,
-      legacyKey: buildScopedLegacyKey({
-        kind: "statement",
-        userId: args.userId,
-        monthKey: args.monthKey,
-        legacyKey: buildStatementLegacyKey({
-          storageId: args.storageId,
-          uploadedAt,
-        }),
-      }),
-      statementId: generateStatementId(),
+      statementId,
       storageId: args.storageId,
       fileName: args.fileName,
       fileType: "csv",
       uploadedAt,
-      transactions: args.csvContent
-        ? parseCsvTransactions(args.csvContent)
-        : undefined,
     });
+
+    for (const transaction of transactions) {
+      await ctx.db.insert("statementTransactions", {
+        userId: args.userId,
+        monthKey: args.monthKey,
+        statementId,
+        transactionId: transaction.id,
+        transaction,
+        createdAt: uploadedAt,
+      });
+    }
   },
 });
 
@@ -140,7 +136,10 @@ export const seedMockData = internalAction({
     ctx,
     args,
   ): Promise<{ monthKey: string; count: number; userId: Id<"users"> }> => {
-    const userId = await ctx.runQuery(internal.seed.getLastUser);
+    const userId: Id<"users"> = await ctx.runQuery(
+      internal.seed.getLastUser,
+      {},
+    );
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
