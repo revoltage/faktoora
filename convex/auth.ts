@@ -3,11 +3,14 @@ import { Password } from "@convex-dev/auth/providers/Password";
 import { Anonymous } from "@convex-dev/auth/providers/Anonymous";
 import { query } from "./_generated/server";
 
+// Anonymous auth is intentionally available for guest sign-in, but storage-backed
+// upload mutations require a non-anonymous Password account before accepting data.
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [Password, Anonymous],
 });
 
 export const loggedInUser = query({
+  args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
