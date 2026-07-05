@@ -1,15 +1,11 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import {
   analysisResultValidator,
-  buildBindingLegacyKey,
-  buildInvoiceLegacyKey,
-  buildScopedLegacyKey,
-  buildStatementLegacyKey,
   createEmptyAnalysis,
   createEmptyParsing,
   generateInvoiceId,
@@ -21,17 +17,14 @@ import {
   findNormalizedInvoiceByMatch,
   getMergedTransactionsFromNormalized,
   getMonthDataFromNormalized,
-  listNormalizedBindings,
   listNormalizedInvoices,
   listNormalizedInvoicesByStorageId,
   listNormalizedStatements,
+  listNormalizedStatementTransactions,
   patchNormalizedInvoicesByStorageId,
 } from "./normalizedMonthStore";
 
-async function safeDeleteStorage(
-  ctx: MutationCtx,
-  storageId: Id<"_storage">,
-) {
+async function safeDeleteStorage(ctx: MutationCtx, storageId: Id<"_storage">) {
   try {
     await ctx.storage.delete(storageId);
   } catch (error) {
@@ -39,8 +32,22 @@ async function safeDeleteStorage(
   }
 }
 
+async function requireNonAnonymousUser(ctx: MutationCtx): Promise<Id<"users">> {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+
+  const user = await ctx.db.get(userId);
+  if (!user || user.isAnonymous) {
+    throw new Error("Password account required for file uploads");
+  }
+
+  return userId;
+}
+
 async function deleteBindingsForInvoiceStorageIds(
-  ctx: any,
+  ctx: MutationCtx,
   userId: Id<"users">,
   monthKey: string,
   storageIds: Set<Id<"_storage">>,
@@ -51,7 +58,7 @@ async function deleteBindingsForInvoiceStorageIds(
 
   const bindings = await ctx.db
     .query("transactionInvoiceBindings")
-    .withIndex("by_user_and_month", (q: any) =>
+    .withIndex("by_user_and_month", (q) =>
       q.eq("userId", userId).eq("monthKey", monthKey),
     )
     .collect();
@@ -67,28 +74,68 @@ async function deleteBindingsForInvoiceStorageIds(
   }
 }
 
-export const migrateInvoiceNames = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const allInvoices = await ctx.db.query("incomingInvoices").collect();
+async function insertStatementTransactions(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  monthKey: string,
+  statementId: string,
+  transactions: Doc<"statementTransactions">["transaction"][] | undefined,
+) {
+  if (!transactions) {
+    return;
+  }
 
-    for (const invoice of allInvoices) {
-      if (!invoice.name) {
-        await ctx.db.patch(invoice._id, {
-          name: getFileNameWithoutExtension(invoice.fileName),
-        });
-      }
+  const now = Date.now();
+  for (const transaction of transactions) {
+    await ctx.db.insert("statementTransactions", {
+      userId,
+      monthKey,
+      statementId,
+      transactionId: transaction.id,
+      transaction,
+      createdAt: now,
+    });
+  }
+}
+
+async function listStatementTransactionsByStatementId(
+  ctx: MutationCtx,
+  statementId: string,
+) {
+  return await ctx.db
+    .query("statementTransactions")
+    .withIndex("by_statement_id", (q) => q.eq("statementId", statementId))
+    .collect();
+}
+
+async function deleteBindingsForTransactionIds(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  monthKey: string,
+  transactionIds: Set<string>,
+) {
+  if (transactionIds.size === 0) {
+    return;
+  }
+
+  const bindings = await ctx.db
+    .query("transactionInvoiceBindings")
+    .withIndex("by_user_and_month", (q) =>
+      q.eq("userId", userId).eq("monthKey", monthKey),
+    )
+    .collect();
+
+  for (const binding of bindings) {
+    if (transactionIds.has(binding.transactionId)) {
+      await ctx.db.delete(binding._id);
     }
-  },
-});
+  }
+}
 
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    await requireNonAnonymousUser(ctx);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -123,10 +170,7 @@ export const addIncomingInvoice = mutation({
     fileHash: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const userId = await requireNonAnonymousUser(ctx);
 
     const existingInvoices = await ctx.db
       .query("incomingInvoices")
@@ -147,16 +191,6 @@ export const addIncomingInvoice = mutation({
     await ctx.db.insert("incomingInvoices", {
       userId,
       monthKey: args.monthKey,
-      legacyKey: buildScopedLegacyKey({
-        kind: "invoice",
-        userId,
-        monthKey: args.monthKey,
-        legacyKey: buildInvoiceLegacyKey({
-          invoiceId,
-          storageId: duplicateSource?.storageId ?? args.storageId,
-          uploadedAt,
-        }),
-      }),
       invoiceId,
       storageId: duplicateSource?.storageId ?? args.storageId,
       fileName: args.fileName,
@@ -198,37 +232,75 @@ export const addStatement = mutation({
     fileName: v.string(),
     fileType: v.union(v.literal("pdf"), v.literal("csv")),
     csvContent: v.optional(v.string()),
+    fileHash: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
+    const userId = await requireNonAnonymousUser(ctx);
+
+    let parsedTransactions: Doc<"statementTransactions">["transaction"][];
+    try {
+      parsedTransactions =
+        args.fileType === "csv" && args.csvContent
+          ? parseCsvTransactions(args.csvContent)
+          : [];
+    } catch (error) {
+      await safeDeleteStorage(ctx, args.storageId);
+      throw error;
     }
 
+    const duplicateSource = args.fileHash
+      ? await ctx.db
+          .query("statements")
+          .withIndex("by_user_month_and_file_hash", (q) =>
+            q
+              .eq("userId", userId)
+              .eq("monthKey", args.monthKey)
+              .eq("fileHash", args.fileHash),
+          )
+          .first()
+      : null;
+
     const uploadedAt = Date.now();
+    const statementId = generateStatementId();
+    const duplicateTransactions = duplicateSource
+      ? (
+          await listStatementTransactionsByStatementId(
+            ctx,
+            duplicateSource.statementId,
+          )
+        ).map((row) => row.transaction)
+      : undefined;
+    const statementTransactions = duplicateTransactions ?? parsedTransactions;
 
     await ctx.db.insert("statements", {
       userId,
       monthKey: args.monthKey,
-      legacyKey: buildScopedLegacyKey({
-        kind: "statement",
-        userId,
-        monthKey: args.monthKey,
-        legacyKey: buildStatementLegacyKey({
-          storageId: args.storageId,
-          uploadedAt,
-        }),
-      }),
-      statementId: generateStatementId(),
-      storageId: args.storageId,
+      statementId,
+      storageId: duplicateSource?.storageId ?? args.storageId,
       fileName: args.fileName,
       fileType: args.fileType,
+      fileHash: args.fileHash,
+      isDuplicate: Boolean(duplicateSource),
+      duplicateOfStorageId: duplicateSource?.storageId,
       uploadedAt,
-      transactions:
-        args.fileType === "csv" && args.csvContent
-          ? parseCsvTransactions(args.csvContent)
-          : undefined,
     });
+
+    await insertStatementTransactions(
+      ctx,
+      userId,
+      args.monthKey,
+      statementId,
+      statementTransactions,
+    );
+
+    if (duplicateSource && duplicateSource.storageId !== args.storageId) {
+      await safeDeleteStorage(ctx, args.storageId);
+    }
+
+    return {
+      isDuplicate: Boolean(duplicateSource),
+      duplicateOfStorageId: duplicateSource?.storageId ?? null,
+    };
   },
 });
 
@@ -297,6 +369,32 @@ export const deleteStatement = mutation({
           .eq("storageId", args.storageId),
       )
       .collect();
+
+    const statementTransactionRows = (
+      await Promise.all(
+        statements.map(
+          async (statement) =>
+            await listStatementTransactionsByStatementId(
+              ctx,
+              statement.statementId,
+            ),
+        ),
+      )
+    ).flat();
+    const transactionIds = new Set(
+      statementTransactionRows.map((row) => row.transactionId),
+    );
+
+    for (const row of statementTransactionRows) {
+      await ctx.db.delete(row._id);
+    }
+
+    await deleteBindingsForTransactionIds(
+      ctx,
+      userId,
+      args.monthKey,
+      transactionIds,
+    );
 
     for (const statement of statements) {
       await ctx.db.delete(statement._id);
@@ -374,13 +472,22 @@ export const updateInvoiceSender = internalMutation({
       args.userId,
       args.monthKey,
       args.storageId,
-      (invoice) => ({
-        name: args.sender.value || invoice.name,
-        analysis: {
-          ...invoice.analysis,
-          sender: args.sender,
-        },
-      }),
+      (invoice) => {
+        const analyzedSender = args.sender.value;
+        const defaultName = getFileNameWithoutExtension(invoice.fileName);
+        const shouldUseAnalyzedSender =
+          analyzedSender !== null &&
+          analyzedSender.length > 0 &&
+          (!invoice.name || invoice.name === defaultName);
+
+        return {
+          ...(shouldUseAnalyzedSender ? { name: analyzedSender } : {}),
+          analysis: {
+            ...invoice.analysis,
+            sender: args.sender,
+          },
+        };
+      },
     );
   },
 });
@@ -430,7 +537,7 @@ export const updateInvoiceName = mutation({
     );
 
     if (!invoice) {
-      throw new Error("Month data not found");
+      throw new Error("Invoice not found");
     }
 
     await ctx.db.patch(invoice._id, { name: args.name });
@@ -491,16 +598,10 @@ export const getMergedTransactions = query({
       return [];
     }
 
-    const userSettings = await ctx.db
-      .query("userSettings")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
-
     return await getMergedTransactionsFromNormalized(
       ctx,
       userId,
       args.monthKey,
-      userSettings?.manualTransactions,
     );
   },
 });
@@ -515,22 +616,35 @@ export const deleteAllStatements = mutation({
       throw new Error("Not authenticated");
     }
 
-    const [statements, bindings] = await Promise.all([
+    const [statements, statementTransactionRows] = await Promise.all([
       listNormalizedStatements(ctx, userId, args.monthKey),
-      listNormalizedBindings(ctx, userId, args.monthKey),
+      listNormalizedStatementTransactions(ctx, userId, args.monthKey),
     ]);
+    const transactionIds = new Set(
+      statementTransactionRows.map((row) => row.transactionId),
+    );
+    const storageIds = new Set(
+      statements.map((statement) => statement.storageId),
+    );
 
-    for (const statement of statements) {
-      await safeDeleteStorage(ctx, statement.storageId);
+    for (const storageId of storageIds) {
+      await safeDeleteStorage(ctx, storageId);
+    }
+
+    for (const row of statementTransactionRows) {
+      await ctx.db.delete(row._id);
     }
 
     for (const statement of statements) {
       await ctx.db.delete(statement._id);
     }
 
-    for (const binding of bindings) {
-      await ctx.db.delete(binding._id);
-    }
+    await deleteBindingsForTransactionIds(
+      ctx,
+      userId,
+      args.monthKey,
+      transactionIds,
+    );
   },
 });
 
@@ -609,12 +723,6 @@ export const bindTransactionToInvoice = mutation({
     await ctx.db.insert("transactionInvoiceBindings", {
       userId,
       monthKey: args.monthKey,
-      legacyKey: buildScopedLegacyKey({
-        kind: "binding",
-        userId,
-        monthKey: args.monthKey,
-        legacyKey: buildBindingLegacyKey({ transactionId: args.transactionId }),
-      }),
       transactionId: args.transactionId,
       invoiceStorageId: args.invoiceStorageId,
       boundAt: Date.now(),
