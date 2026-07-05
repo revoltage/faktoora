@@ -1,10 +1,16 @@
 import { useQuery } from "convex/react";
 import { Fragment } from "react";
 import { api } from "../../convex/_generated/api";
-import { toEur, fromEur, parseInvoiceAmount } from "@/lib/currency";
+import {
+  toEur,
+  fromEur,
+  parseInvoiceAmount,
+  EUR_RATE_METADATA,
+  parseCurrencyRates,
+} from "@/lib/currency";
 import type { IncomingInvoice } from "@/lib/types";
 
-const DISPLAY_CURRENCIES = ['EUR', 'USD', 'BGN'] as const;
+const DEFAULT_DISPLAY_CURRENCIES = ["EUR", "USD", "BGN"] as const;
 
 function format(amount: number, currency: string) {
   return `${currency} ${amount.toFixed(2)}`;
@@ -20,9 +26,15 @@ export function MonthSummary({
   const transactions = useQuery(api.invoices.getMergedTransactions, {
     monthKey,
   });
+  const userSettings = useQuery(api.userSettings.getUserSettings);
+  const rates = parseCurrencyRates(userSettings?.currencyRates);
+  const rateDate = userSettings?.currencyRateDate || EUR_RATE_METADATA.asOf;
+  const displayCurrencies = Array.from(
+    new Set([...DEFAULT_DISPLAY_CURRENCIES, ...Object.keys(rates)]),
+  );
 
-  const expenseTypes = ['CARD_PAYMENT', 'MANUAL'];
-  const incomeTypes = ['TRANSFER', 'TOPUP'];
+  const expenseTypes = ["CARD_PAYMENT", "MANUAL"];
+  const incomeTypes = ["TRANSFER", "TOPUP"];
   let expenseEur = 0;
   let expenseCount = 0;
   let incomeEur = 0;
@@ -36,17 +48,17 @@ export function MonthSummary({
       if (isNaN(amount) || !t.paymentCurrency) continue;
 
       if (expenseTypes.includes(t.type) && amount < 0 && !t.isRefunded) {
-        expenseEur += toEur(amount, t.paymentCurrency);
+        expenseEur += toEur(amount, t.paymentCurrency, rates);
         expenseCount++;
       }
 
       if (incomeTypes.includes(t.type) && amount > 0) {
-        incomeEur += toEur(amount, t.paymentCurrency);
+        incomeEur += toEur(amount, t.paymentCurrency, rates);
         incomeCount++;
       }
 
-      if (t.type === 'FEE') {
-        feeEur += toEur(amount, t.paymentCurrency);
+      if (t.type === "FEE") {
+        feeEur += toEur(amount, t.paymentCurrency, rates);
         feeCount++;
       }
     }
@@ -61,37 +73,70 @@ export function MonthSummary({
     if (inv.isDuplicate) continue;
     const parsed = parseInvoiceAmount(inv.analysis?.amount?.value);
     if (parsed) {
-      invoiceEur += toEur(parsed.amount, parsed.currency);
+      invoiceEur += toEur(parsed.amount, parsed.currency, rates);
       invoiceCount++;
     }
   }
 
-  if (!transactions || (expenseCount === 0 && incomeCount === 0 && feeCount === 0 && invoiceCount === 0)) {
+  if (
+    !transactions ||
+    (expenseCount === 0 &&
+      incomeCount === 0 &&
+      feeCount === 0 &&
+      invoiceCount === 0)
+  ) {
     return null;
   }
 
   const cols = [
-    invoiceCount > 0 && { label: 'Invoices', eurAmount: invoiceEur, tooltip: `${invoiceCount} invoices` },
-    expenseCount > 0 && { label: 'Expenses', eurAmount: Math.abs(expenseEur), tooltip: `${expenseCount} transactions (CARD_PAYMENT, MANUAL)` },
-    feeCount > 0 && { label: 'Fees', eurAmount: Math.abs(feeEur), tooltip: `${feeCount} transactions (FEE)` },
-    incomeCount > 0 && { label: 'Income', eurAmount: incomeEur, tooltip: `${incomeCount} transactions (TRANSFER, TOPUP)` },
+    invoiceCount > 0 && {
+      label: "Invoices",
+      eurAmount: invoiceEur,
+      tooltip: `${invoiceCount} invoices`,
+    },
+    expenseCount > 0 && {
+      label: "Expenses",
+      eurAmount: Math.abs(expenseEur),
+      tooltip: `${expenseCount} transactions (CARD_PAYMENT, MANUAL)`,
+    },
+    feeCount > 0 && {
+      label: "Fees",
+      eurAmount: Math.abs(feeEur),
+      tooltip: `${feeCount} transactions (FEE)`,
+    },
+    incomeCount > 0 && {
+      label: "Income",
+      eurAmount: incomeEur,
+      tooltip: `${incomeCount} transactions (TRANSFER, TOPUP)`,
+    },
   ].filter(Boolean) as { label: string; eurAmount: number; tooltip: string }[];
 
   return (
-    <div
-      className="grid w-fit gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground"
-      style={{ gridTemplateColumns: `repeat(${cols.length}, auto auto)` }}
-    >
-      {DISPLAY_CURRENCIES.map(currency =>
-        cols.map(col => (
-          <Fragment key={`${currency}-${col.label}`}>
-            <span title={col.tooltip}>{col.label}:</span>
-            <span className="text-right font-semibold text-foreground tabular-nums" title={col.tooltip}>
-              {format(fromEur(col.eurAmount, currency), currency)}
-            </span>
-          </Fragment>
-        ))
-      )}
+    <div className="space-y-0.5">
+      <div
+        className="grid w-fit gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground"
+        style={{ gridTemplateColumns: `repeat(${cols.length}, auto auto)` }}
+      >
+        {displayCurrencies.map((currency) =>
+          cols.map((col) => (
+            <Fragment key={`${currency}-${col.label}`}>
+              <span title={col.tooltip}>{col.label}:</span>
+              <span
+                className="text-right font-semibold text-foreground tabular-nums"
+                title={col.tooltip}
+              >
+                {format(fromEur(col.eurAmount, currency, rates), currency)}
+              </span>
+            </Fragment>
+          )),
+        )}
+      </div>
+      <div
+        className="text-[9px] text-muted-foreground"
+        title={`${EUR_RATE_METADATA.source}; base ${EUR_RATE_METADATA.baseCurrency}`}
+      >
+        Rates as of {rateDate}
+      </div>
     </div>
   );
 }
