@@ -1,102 +1,59 @@
-const GOOGLE_USER_INDEX = 0;
+export type HelperLinkRule = {
+  keywords: string[];
+  links: string[];
+};
 
-const HELPER_LINKS = [
-  {
-    keywords: ["linkedin"],
-    links: [
-      "https://www.linkedin.com/manage/purchases-payments?account=240994474",
-    ],
-  },
-  {
-    keywords: ["fal.ai", "features labels"],
-    links: ["https://fal.ai/dashboard/billing"],
-  },
-  {
-    keywords: ["cursor", "anysphere"],
-    links: ["https://cursor.com/dashboard?tab=billing"],
-  },
-  {
-    keywords: ["t3 chat"],
-    links: ["https://t3.chat/settings/subscription"],
-  },
-  {
-    keywords: ["vercel"],
-    links: ["https://vercel.com/account/settings/invoices"],
-  },
-  {
-    keywords: ["clicky"],
-    links: ["https://clicky.com/user/payments"],
-  },
-  {
-    keywords: ["github"],
-    links: ["https://github.com/account/billing/history"],
-  },
-  {
-    keywords: ["discord"],
-    links: ["https://discord.com/channels/@me"],
-  },
-  {
-    keywords: ["ozone"],
-    links: ["https://www.ozone.bg/customerutils/return/invoice"],
-  },
-  {
-    keywords: ["stability"],
-    links: [`https://mail.google.com/mail/u/${GOOGLE_USER_INDEX}/#search/stability+invoice`],
-  },
-  {
-    keywords: ["stackblitz"],
-    links: [`https://mail.google.com/mail/u/${GOOGLE_USER_INDEX}/#search/stackblitz+invoice`],
-  },
-  {
-    keywords: ["google cloud", "google*cloud"],
-    links: [`https://mail.google.com/mail/u/${GOOGLE_USER_INDEX}/#search/google+cloud+invoice`],
-  },
-  {
-    keywords: ["google workspace"],
-    links: [
-      "https://mail.google.com/mail/u/0/#search/google+workspace+invoice",
-    ],
-  },
-  {
-    keywords: ["zoho"],
-    links: ["https://store.zoho.eu/html/store/mytransaction.html"],
-  },
-  {
-    keywords: ["digital ocean"],
-    links: [`https://mail.google.com/mail/u/${GOOGLE_USER_INDEX}/#search/digital+ocean+invoice`],
-  },
-  {
-    keywords: ["krea"],
-    links: [`https://mail.google.com/mail/u/${GOOGLE_USER_INDEX}/#search/krea+invoice`],
-  },
-  {
-    keywords: ["huggingface"],
-    links: [
-      `https://mail.google.com/mail/u/${GOOGLE_USER_INDEX}/#search/hugging+face+invoice`,
-      "https://huggingface.co/settings/billing",
-    ],
-  },
-  {
-    keywords: ["ardes"],
-    links: ["https://ardes.bg/rw/ordershistory"],
-  },
-] as const;
+function expandLinkTemplate(link: string, description: string) {
+  const normalizedDescription = description.trim();
+  const query = normalizedDescription.toLowerCase().replace(/\s+/g, "+");
 
-function makeDefaultLinks(description: string) {
-  return [
-    `https://mail.google.com/mail/u/${GOOGLE_USER_INDEX}/#search/${description.toLowerCase()}+invoice`,
-  ];
+  return link
+    .replaceAll("{query}", query)
+    .replaceAll("{description}", encodeURIComponent(normalizedDescription));
 }
 
-export function getInvoiceHelperLinks(description: string) {
+function parseHelperLinkRules(
+  value: string | null | undefined,
+): HelperLinkRule[] {
+  if (!value) return [];
+
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith("#"))
+    .map((line) => {
+      const separator = line.includes("|") ? "|" : "=>";
+      const separatorIndex = line.indexOf(separator);
+      if (separatorIndex === -1) return null;
+
+      const keywords = line
+        .slice(0, separatorIndex)
+        .split(",")
+        .map((keyword) => keyword.trim().toLowerCase())
+        .filter(Boolean);
+      const links = line
+        .slice(separatorIndex + separator.length)
+        .split(",")
+        .map((link) => link.trim())
+        .filter(Boolean);
+
+      if (keywords.length === 0 || links.length === 0) return null;
+      return { keywords, links };
+    })
+    .filter((rule): rule is HelperLinkRule => rule !== null);
+}
+
+export function getInvoiceHelperLinks(
+  description: string,
+  configuredRules: string | null | undefined,
+) {
   const desc = description.toLowerCase();
-  const results = HELPER_LINKS.filter(({ keywords }) =>
-    keywords.some((keyword) => desc.includes(keyword.toLowerCase()))
-  ).flatMap(({ links }) => links);
 
-  if (results.length === 0) {
-    return makeDefaultLinks(description);
-  }
-
-  return results;
+  return parseHelperLinkRules(configuredRules)
+    .filter(({ keywords }) =>
+      keywords.some((keyword) => keyword === "*" || desc.includes(keyword)),
+    )
+    .flatMap(({ links }) =>
+      links.map((link) => expandLinkTemplate(link, description)),
+    );
 }
