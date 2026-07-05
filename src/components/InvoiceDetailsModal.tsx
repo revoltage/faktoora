@@ -29,7 +29,7 @@ export const InvoiceDetailsModal = ({
   onClose,
   onDelete,
   onUpdateName,
-  monthKey,
+  monthKey: _monthKey,
 }: InvoiceDetailsModalProps) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(invoice?.name || "");
@@ -47,7 +47,20 @@ export const InvoiceDetailsModal = ({
     });
   };
 
-  const getStatusBadge = (section: Record<string, { value: string | null; error: string | null; lastUpdated: number | null } | undefined> | undefined, field: string) => {
+  const getStatusBadge = (
+    section:
+      | Record<
+          string,
+          | {
+              value: string | null;
+              error: string | null;
+              lastUpdated: number | null;
+            }
+          | undefined
+        >
+      | undefined,
+    field: string,
+  ) => {
     const fieldData = section?.[field];
     if (!fieldData) {
       return (
@@ -84,10 +97,9 @@ export const InvoiceDetailsModal = ({
     );
   };
 
-  const formatAmount = (value: unknown) => {
+  const formatAmount = (value: string | null | undefined) => {
     if (!value) return null;
-    const s = String(value).replace("|", " ").trim();
-    return s;
+    return value.replace("|", " ").trim();
   };
 
   const Field = ({
@@ -233,15 +245,17 @@ export const InvoiceDetailsModal = ({
                       field: "amount",
                     },
                   ].map((item) => {
-                    const section = item.section as Record<
-                      string,
-                      | {
-                          value: string | null;
-                          error: string | null;
-                          lastUpdated: number | null;
-                        }
-                      | undefined
-                    > | undefined;
+                    const section = item.section as
+                      | Record<
+                          string,
+                          | {
+                              value: string | null;
+                              error: string | null;
+                              lastUpdated: number | null;
+                            }
+                          | undefined
+                        >
+                      | undefined;
                     const field = section?.[item.field];
                     return (
                       <div key={item.label} className="space-y-2">

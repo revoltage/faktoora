@@ -202,11 +202,20 @@ export function TransactionList({
   const transactions = useQuery(api.invoices.getMergedTransactions, {
     monthKey,
   });
-  const [selectedTransaction, setSelectedTransaction] = useState<MergedTransaction | null>(null);
+  const userSettings = useQuery(api.userSettings.getUserSettings);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<MergedTransaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showFiltered, setShowFiltered] = useState(true);
-  const [bindingTransaction, setBindingTransaction] = useState<MergedTransaction | null>(null);
+  const [bindingTransaction, setBindingTransaction] =
+    useState<MergedTransaction | null>(null);
   const [isBindingModalOpen, setIsBindingModalOpen] = useState(false);
+  const invoiceHelperLinks =
+    userSettings &&
+    "invoiceHelperLinks" in userSettings &&
+    typeof userSettings.invoiceHelperLinks === "string"
+      ? userSettings.invoiceHelperLinks
+      : undefined;
 
   if (!transactions) {
     return (
@@ -335,7 +344,10 @@ export function TransactionList({
     setSelectedTransaction(null);
   };
 
-  const handleBindingClick = (transaction: MergedTransaction, e: React.MouseEvent) => {
+  const handleBindingClick = (
+    transaction: MergedTransaction,
+    e: React.MouseEvent,
+  ) => {
     e.stopPropagation();
     setBindingTransaction(transaction);
     setIsBindingModalOpen(true);
@@ -355,7 +367,7 @@ export function TransactionList({
 
   // Helper function to find matching links for a transaction
   const findHelperLinks = (description: string) => {
-    return getInvoiceHelperLinks(description);
+    return getInvoiceHelperLinks(description, invoiceHelperLinks);
   };
 
   const visibleTransactions = showFiltered
@@ -391,13 +403,13 @@ export function TransactionList({
       </div>
 
       <div className="space-y-0">
-        {displayTransactions.map((transaction, index) => {
+        {displayTransactions.map((transaction) => {
           const helperLinks = findHelperLinks(transaction.description || "");
           const isSolved = Boolean(transaction.boundInvoiceStorageId);
 
           return (
             <TransactionRow
-              key={`${transaction.id}-${index}`}
+              key={`${transaction.sourceFile}:${transaction.id}`}
               transaction={transaction}
               compact={showFiltered && isSolved}
               muted={isSolved}

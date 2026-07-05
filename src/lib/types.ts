@@ -31,12 +31,7 @@ export type TransactionBinding = Doc<"transactionInvoiceBindings">;
  * invoice storage id. Mirrors the records produced by
  * `getMergedTransactionsFromNormalized` in `convex/normalizedMonthStore.ts`.
  */
-type StatementTransactionTuple = NonNullable<Doc<"statements">["transactions"]>;
-type StatementTransaction = StatementTransactionTuple extends ReadonlyArray<
-  infer T
->
-  ? T
-  : never;
+type StatementTransaction = Doc<"statementTransactions">["transaction"];
 
 export type MergedTransaction = StatementTransaction & {
   sourceFile: string;

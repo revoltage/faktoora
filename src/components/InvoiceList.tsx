@@ -17,7 +17,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMonthDisplay } from "@/lib/dateFormat";
-import type { IncomingInvoice, StorageId, TransactionBinding } from "@/lib/types";
+import type {
+  IncomingInvoice,
+  StorageId,
+  TransactionBinding,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface UploadingInvoice {
@@ -97,10 +101,16 @@ export const InvoiceList = ({
   const boundInvoiceIds = new Set(
     transactionInvoiceBindings
       .map((binding) => binding.invoiceStorageId)
-      .filter(
-        (id): id is StorageId => id !== null && id !== "NOT_NEEDED",
-      ),
+      .filter((id): id is StorageId => id !== null && id !== "NOT_NEEDED"),
   );
+  const boundInvoiceBindingCount = transactionInvoiceBindings.filter(
+    (binding) =>
+      binding.invoiceStorageId !== null &&
+      binding.invoiceStorageId !== "NOT_NEEDED",
+  ).length;
+  const manualBindingCount = transactionInvoiceBindings.filter(
+    (binding) => binding.invoiceStorageId === "NOT_NEEDED",
+  ).length;
 
   // Check if an invoice is bound
   const isInvoiceBound = (invoice: IncomingInvoice) => {
@@ -122,6 +132,20 @@ export const InvoiceList = ({
       toast.success("🗑️ All invoices deleted successfully");
     } catch {
       toast.error("Failed to delete all invoices");
+    }
+  };
+
+  const handleDeleteInvoice = async (invoice: IncomingInvoice) => {
+    try {
+      await deleteIncomingInvoice({
+        monthKey,
+        invoiceId: invoice.invoiceId,
+        storageId: invoice.storageId,
+        uploadedAt: invoice.uploadedAt,
+      });
+      toast.success("🗑️ Invoice deleted successfully");
+    } catch {
+      toast.error("Failed to delete invoice");
     }
   };
 
@@ -263,9 +287,14 @@ export const InvoiceList = ({
                   <AlertDialogHeader>
                     <AlertDialogTitle>🗑️ Delete All Invoices</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete all invoice files for{" "}
-                      {formatMonthDisplay(monthKey)}? This action cannot be
-                      undone.
+                      Delete {incomingInvoices.length} invoice file
+                      {incomingInvoices.length === 1 ? "" : "s"} for{" "}
+                      {formatMonthDisplay(monthKey)}? This also removes{" "}
+                      {boundInvoiceBindingCount} invoice binding
+                      {boundInvoiceBindingCount === 1 ? "" : "s"} for deleted
+                      files. {manualBindingCount} manual not-needed binding
+                      {manualBindingCount === 1 ? "" : "s"} will remain. This
+                      action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -526,22 +555,44 @@ export const InvoiceList = ({
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="!h-4 !w-4 p-0 mr-1 text-gray-400 hover:text-gray-600 rounded-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void deleteIncomingInvoice({
-                          monthKey,
-                          invoiceId: invoice.invoiceId,
-                          storageId: invoice.storageId,
-                          uploadedAt: invoice.uploadedAt,
-                        });
-                      }}
-                    >
-                      <XIcon className="!h-2.5 !w-2.5" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="!h-4 !w-4 p-0 mr-1 text-gray-400 hover:text-gray-600 rounded-full"
+                          onClick={(e) => e.stopPropagation()}
+                          title={
+                            isBound
+                              ? "Delete invoice and remove its binding"
+                              : "Delete invoice"
+                          }
+                        >
+                          <XIcon className="!h-2.5 !w-2.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Invoice?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Delete {invoice.name ?? invoice.fileName}?{" "}
+                            {isBound
+                              ? "Its transaction binding will also be removed. "
+                              : ""}
+                            This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => void handleDeleteInvoice(invoice)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               );

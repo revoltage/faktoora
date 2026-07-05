@@ -1,5 +1,5 @@
 import { useQuery } from "convex/react";
-import { Copy, Mail, Download, Send } from "lucide-react";
+import { Mail, Download, Send } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 
@@ -21,9 +21,13 @@ export const EmailDraft = ({
   uploadingInvoices = [],
 }: EmailDraftProps) => {
   const userSettings = useQuery(api.userSettings.getUserSettings);
-  
+
   // Create email draft content and subject
-  const { emailContent, emailSubject } = createEmailContent(invoices, statements, monthKey);
+  const { emailContent, emailSubject } = createEmailContent(
+    invoices,
+    statements,
+    monthKey,
+  );
 
   if (!emailContent) {
     return null;
@@ -54,8 +58,10 @@ export const EmailDraft = ({
   const handleOpenGmail = () => {
     const subject = encodeURIComponent(emailSubject);
     const body = encodeURIComponent(emailContent);
-    const to = userSettings?.accEmail ? encodeURIComponent(userSettings.accEmail) : "";
-    const gmailUrl = to 
+    const to = userSettings?.accEmail
+      ? encodeURIComponent(userSettings.accEmail)
+      : "";
+    const gmailUrl = to
       ? `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`
       : `https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`;
     window.open(gmailUrl, "_blank");
@@ -64,8 +70,8 @@ export const EmailDraft = ({
 
   const handleDownloadAll = async () => {
     const filesToDownload = [
-      ...statements.filter(s => s.url),
-      ...invoices.filter(i => i.url)
+      ...statements.filter((s) => s.url),
+      ...invoices.filter((i) => i.url),
     ];
 
     if (filesToDownload.length === 0) {
@@ -75,7 +81,7 @@ export const EmailDraft = ({
 
     try {
       // Check for File System Access API support
-      if (!('showDirectoryPicker' in window)) {
+      if (!("showDirectoryPicker" in window)) {
         toast.error("❌ Modern file access not supported in this browser");
         return;
       }
@@ -88,25 +94,34 @@ export const EmailDraft = ({
 
       // Request directory access
       // File System Access API: showDirectoryPicker is non-standard and may not exist.
-      const showDirectoryPicker = (window as unknown as {
-        showDirectoryPicker: (opts: { mode: 'readwrite' }) => Promise<FileSystemDirectoryHandle>;
-      }).showDirectoryPicker;
-      const dirHandle = await showDirectoryPicker({ mode: 'readwrite' });
+      const showDirectoryPicker = (
+        window as unknown as {
+          showDirectoryPicker: (opts: {
+            mode: "readwrite";
+          }) => Promise<FileSystemDirectoryHandle>;
+        }
+      ).showDirectoryPicker;
+      const dirHandle = await showDirectoryPicker({ mode: "readwrite" });
 
       // Get or create the subfolder
-      let subfolderHandle = await dirHandle.getDirectoryHandle(folderName, { create: true });
+      const subfolderHandle = await dirHandle.getDirectoryHandle(folderName, {
+        create: true,
+      });
 
       toast.info(`📥 Downloading ${filesToDownload.length} files...`);
-      
+
       // Download all files to the subfolder
       for (const file of filesToDownload) {
         if (!file.url) continue;
         try {
           const response = await fetch(file.url);
           const blob = await response.blob();
-          
+
           // Create a file in the subfolder
-          const fileHandle = await subfolderHandle.getFileHandle(file.fileName || "file.pdf", { create: true });
+          const fileHandle = await subfolderHandle.getFileHandle(
+            file.fileName || "file.pdf",
+            { create: true },
+          );
           const writable = await fileHandle.createWritable();
           await writable.write(blob);
           await writable.close();
@@ -114,11 +129,11 @@ export const EmailDraft = ({
           console.error(`Failed to download ${file.fileName}:`, error);
         }
       }
-      
+
       toast.success(`✅ All files saved to "${folderName}"`);
     } catch (error: unknown) {
       const errName = (error as { name?: string } | null)?.name;
-      if (errName === 'AbortError') {
+      if (errName === "AbortError") {
         toast.info("💭 Download cancelled");
       } else {
         toast.error("❌ Failed to download all files");
@@ -170,10 +185,9 @@ export const EmailDraft = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-3 pt-0">
-
         {/* Email Subject */}
         <div className="mb-1">
-          <div 
+          <div
             className="text-[10px] text-muted-foreground font-[Arial, sans-serif] font-semibold cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-t transition-colors border border-transparent group-hover:border-gray-200"
             onClick={handleCopySubject}
             title="Click to copy email subject"
@@ -184,7 +198,7 @@ export const EmailDraft = ({
 
         {/* Email Body */}
         <div>
-          <pre 
+          <pre
             className="whitespace-pre-wrap text-[10px] text-muted-foreground font-[Arial, sans-serif] font-normal cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-b transition-colors border border-transparent group-hover:border-gray-200"
             onClick={handleCopyToClipboard}
             title="Click to copy email draft"
@@ -202,7 +216,7 @@ export const EmailDraft = ({
 function createEmailContent(
   invoices: IncomingInvoice[],
   statements: StatementDoc[],
-  monthKey: string
+  monthKey: string,
 ) {
   // Parse month from monthKey (format: "YYYY-MM")
   const [year, month] = monthKey.split("-");
@@ -259,8 +273,9 @@ function createEmailContent(
   // Add invoices list
   if (hasInvoices) {
     // Sort invoices by uploadedAt (oldest first)
-    const sortedInvoices = [...invoices].sort((a, b) =>
-      new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime()
+    const sortedInvoices = [...invoices].sort(
+      (a, b) =>
+        new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime(),
     );
 
     // Count occurrences of each display name

@@ -153,7 +153,7 @@ export const TransactionDetailsModal = ({
                   >
                     {formatAmount(
                       transaction.amount,
-                      transaction.paymentCurrency
+                      transaction.paymentCurrency,
                     )}
                   </p>
                 </div>
@@ -205,7 +205,7 @@ export const TransactionDetailsModal = ({
                     {transaction.origAmount
                       ? formatAmount(
                           transaction.origAmount,
-                          transaction.origCurrency
+                          transaction.origCurrency,
                         )
                       : "Not available"}
                   </p>
@@ -219,7 +219,7 @@ export const TransactionDetailsModal = ({
                   >
                     {formatAmount(
                       transaction.amount,
-                      transaction.paymentCurrency
+                      transaction.paymentCurrency,
                     )}
                   </p>
                 </div>
@@ -231,7 +231,7 @@ export const TransactionDetailsModal = ({
                     {transaction.totalAmount
                       ? formatAmount(
                           transaction.totalAmount,
-                          transaction.paymentCurrency
+                          transaction.paymentCurrency,
                         )
                       : "Not available"}
                   </p>
@@ -244,7 +244,7 @@ export const TransactionDetailsModal = ({
                     {transaction.balance
                       ? formatAmount(
                           transaction.balance,
-                          transaction.paymentCurrency
+                          transaction.paymentCurrency,
                         )
                       : "Not available"}
                   </p>
