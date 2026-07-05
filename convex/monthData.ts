@@ -1,5 +1,4 @@
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 
 export const analysisResultValidator = v.object({
   value: v.union(v.string(), v.null()),
@@ -50,42 +49,9 @@ export const statementTransactionValidator = v.object({
   spendProgram: v.string(),
 });
 
-export const legacyInvoiceValidator = v.object({
-  invoiceId: v.optional(v.string()),
-  storageId: v.id("_storage"),
-  fileName: v.string(),
-  name: v.optional(v.string()),
-  fileHash: v.optional(v.string()),
-  isDuplicate: v.optional(v.boolean()),
-  duplicateOfStorageId: v.optional(v.id("_storage")),
-  uploadedAt: v.number(),
-  analysis: invoiceAnalysisValidator,
-  parsing: invoiceParsingValidator,
-});
-
-export const legacyTransactionBindingValidator = v.object({
-  transactionId: v.string(),
-  invoiceStorageId: v.union(
-    v.id("_storage"),
-    v.literal("NOT_NEEDED"),
-    v.null(),
-  ),
-  boundAt: v.number(),
-});
-
-export const legacyStatementValidator = v.object({
-  storageId: v.id("_storage"),
-  fileName: v.string(),
-  fileType: v.union(v.literal("pdf"), v.literal("csv")),
-  uploadedAt: v.number(),
-  transactions: v.optional(v.array(statementTransactionValidator)),
-});
-
 export const normalizedInvoiceValidator = v.object({
   userId: v.id("users"),
   monthKey: v.string(),
-  legacyMonthId: v.optional(v.id("months")),
-  legacyKey: v.string(),
   invoiceId: v.string(),
   storageId: v.id("_storage"),
   fileName: v.string(),
@@ -96,28 +62,24 @@ export const normalizedInvoiceValidator = v.object({
   uploadedAt: v.number(),
   analysis: invoiceAnalysisValidator,
   parsing: invoiceParsingValidator,
-  migratedAt: v.optional(v.number()),
 });
 
 export const normalizedStatementValidator = v.object({
   userId: v.id("users"),
   monthKey: v.string(),
-  legacyMonthId: v.optional(v.id("months")),
-  legacyKey: v.string(),
   statementId: v.string(),
   storageId: v.id("_storage"),
   fileName: v.string(),
   fileType: v.union(v.literal("pdf"), v.literal("csv")),
+  fileHash: v.optional(v.string()),
+  isDuplicate: v.optional(v.boolean()),
+  duplicateOfStorageId: v.optional(v.id("_storage")),
   uploadedAt: v.number(),
-  transactions: v.optional(v.array(statementTransactionValidator)),
-  migratedAt: v.optional(v.number()),
 });
 
 export const normalizedTransactionBindingValidator = v.object({
   userId: v.id("users"),
   monthKey: v.string(),
-  legacyMonthId: v.optional(v.id("months")),
-  legacyKey: v.string(),
   transactionId: v.string(),
   invoiceStorageId: v.union(
     v.id("_storage"),
@@ -125,7 +87,6 @@ export const normalizedTransactionBindingValidator = v.object({
     v.null(),
   ),
   boundAt: v.number(),
-  migratedAt: v.optional(v.number()),
 });
 
 export function getFileNameWithoutExtension(fileName: string): string {
@@ -144,21 +105,6 @@ export function generateStatementId(): string {
   return `stmt_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export function getStableInvoiceId(args: {
-  invoiceId?: string;
-  storageId: Id<"_storage">;
-  uploadedAt: number;
-}): string {
-  return args.invoiceId ?? `legacy_inv_${args.storageId}_${args.uploadedAt}`;
-}
-
-export function getStableStatementId(args: {
-  storageId: Id<"_storage">;
-  uploadedAt: number;
-}): string {
-  return `legacy_stmt_${args.storageId}_${args.uploadedAt}`;
-}
-
 export function createEmptyAnalysis() {
   return {
     date: { value: null, error: null, lastUpdated: null },
@@ -175,39 +121,60 @@ export function createEmptyParsing() {
   };
 }
 
-export function buildInvoiceLegacyKey(args: {
-  invoiceId?: string;
-  storageId: Id<"_storage">;
-  uploadedAt: number;
-}): string {
-  return args.invoiceId ?? `${args.storageId}:${args.uploadedAt}`;
-}
+const statementTransactionColumns = [
+  ["Started Date", "dateStarted"],
+  ["Completed Date", "dateCompleted"],
+  ["ID", "id"],
+  ["Type", "type"],
+  ["State", "state"],
+  ["Description", "description"],
+  ["Reference", "reference"],
+  ["Payer", "payer"],
+  ["Card Number", "cardNumber"],
+  ["Card Label", "cardLabel"],
+  ["Card State", "cardState"],
+  ["Orig Currency", "origCurrency"],
+  ["Orig Amount", "origAmount"],
+  ["Payment Currency", "paymentCurrency"],
+  ["Amount", "amount"],
+  ["Total Amount", "totalAmount"],
+  ["Exchange Rate", "exchangeRate"],
+  ["Fee", "fee"],
+  ["Fee Currency", "feeCurrency"],
+  ["Balance", "balance"],
+  ["Account", "account"],
+  ["Beneficiary Account Number", "beneficiaryAccountNumber"],
+  ["Beneficiary Sort Code", "beneficiarySortCode"],
+  ["Beneficiary IBAN", "beneficiaryIban"],
+  ["Beneficiary BIC", "beneficiaryBic"],
+  ["MCC", "mcc"],
+  ["Related Transaction ID", "relatedTransactionId"],
+  ["Spend Program", "spendProgram"],
+] as const;
 
-export function buildStatementLegacyKey(args: {
-  storageId: Id<"_storage">;
-  uploadedAt: number;
-}): string {
-  return `${args.storageId}:${args.uploadedAt}`;
-}
-
-export function buildBindingLegacyKey(args: { transactionId: string }): string {
-  return args.transactionId;
-}
-
-export function buildScopedLegacyKey(args: {
-  kind: "invoice" | "statement" | "binding";
-  userId: Id<"users">;
-  monthKey: string;
-  legacyKey: string;
-}): string {
-  return `${args.kind}:${args.userId}:${args.monthKey}:${args.legacyKey}`;
-}
+type StatementTransactionField =
+  (typeof statementTransactionColumns)[number][1];
 
 export function parseCsvTransactions(csvText: string) {
   const lines = csvText.split("\n").filter((line) => line.trim());
   if (lines.length < 2) return [];
 
-  const headers = lines[0].split(",").map((h) => h.trim());
+  const headers = parseCsvLine(lines[0]);
+  const columnIndexes = new Map<string, number>();
+  for (let i = 0; i < headers.length; i++) {
+    columnIndexes.set(headers[i].trim().toLowerCase(), i);
+  }
+
+  const missingHeaders = statementTransactionColumns
+    .filter(([header]) => !columnIndexes.has(header.trim().toLowerCase()))
+    .map(([header]) => header);
+
+  if (missingHeaders.length > 0) {
+    throw new Error(
+      `Revolut CSV is missing required column${missingHeaders.length === 1 ? "" : "s"}: ${missingHeaders.join(", ")}`,
+    );
+  }
+
   const transactions = [];
 
   for (let i = 1; i < lines.length; i++) {
@@ -215,39 +182,12 @@ export function parseCsvTransactions(csvText: string) {
     if (!line.trim()) continue;
 
     const values = parseCsvLine(line);
-
-    if (values.length >= headers.length) {
-      transactions.push({
-        id: values[2] || "",
-        dateStarted: values[0] || "",
-        dateCompleted: values[1] || "",
-        type: values[3] || "",
-        state: values[4] || "",
-        description: values[5] || "",
-        reference: values[6] || "",
-        payer: values[7] || "",
-        cardNumber: values[8] || "",
-        cardLabel: values[9] || "",
-        cardState: values[10] || "",
-        origCurrency: values[11] || "",
-        origAmount: values[12] || "",
-        paymentCurrency: values[13] || "",
-        amount: values[14] || "",
-        totalAmount: values[15] || "",
-        exchangeRate: values[16] || "",
-        fee: values[17] || "",
-        feeCurrency: values[18] || "",
-        balance: values[19] || "",
-        account: values[20] || "",
-        beneficiaryAccountNumber: values[21] || "",
-        beneficiarySortCode: values[22] || "",
-        beneficiaryIban: values[23] || "",
-        beneficiaryBic: values[24] || "",
-        mcc: values[25] || "",
-        relatedTransactionId: values[26] || "",
-        spendProgram: values[27] || "",
-      });
+    const transaction = {} as Record<StatementTransactionField, string>;
+    for (const [header, field] of statementTransactionColumns) {
+      const columnIndex = columnIndexes.get(header.trim().toLowerCase())!;
+      transaction[field] = values[columnIndex] || "";
     }
+    transactions.push(transaction);
   }
 
   return transactions;
