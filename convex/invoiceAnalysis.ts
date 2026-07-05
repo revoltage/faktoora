@@ -3,13 +3,14 @@
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { generateText } from "ai";
+import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { groq } from "@ai-sdk/groq";
 import { google } from "@ai-sdk/google";
 import { FEATURE_FLAGS } from "./featureFlags";
 import { detectFileType } from "./lib/fileType";
+import { z } from "zod";
 
 export const analyzeInvoice = internalAction({
   args: {
@@ -22,12 +23,12 @@ export const analyzeInvoice = internalAction({
       // Check if invoice analysis feature flag is enabled
       const isInvoiceAnalysisEnabled = await ctx.runQuery(
         internal.featureFlags.getFeatureFlagInternal,
-        { flagName: FEATURE_FLAGS.invoiceAnalysis }
+        { flagName: FEATURE_FLAGS.invoiceAnalysis },
       );
 
       if (!isInvoiceAnalysisEnabled) {
         console.log(
-          "🚫 Invoice analysis feature flag is disabled, setting analysis to disabled state"
+          "🚫 Invoice analysis feature flag is disabled, setting analysis to disabled state",
         );
 
         // Set all analysis fields to show disabled state
@@ -61,7 +62,7 @@ export const analyzeInvoice = internalAction({
         internal.userSettings.getUserSettingsInternal,
         {
           userId: args.userId,
-        }
+        },
       );
       const modelKey =
         (userSettings?.aiModel as keyof typeof AI_MODELS) || "gemini";
@@ -74,61 +75,33 @@ export const analyzeInvoice = internalAction({
       const fileType = detectFileType(fileBuffer);
       console.log(`📎 Detected file type: ${fileType}`);
 
-      // Start all extractions in parallel but handle each individually
-      const datePromise = extractInvoiceDate(fileBuffer, modelKey).then(
-        async (dateResult) => {
-          await ctx.runMutation(internal.invoices.updateInvoiceDate, {
-            monthKey: args.monthKey,
-            storageId: args.storageId,
-            userId: args.userId,
-            date: dateResult,
-          });
-          return dateResult;
-        }
-      );
+      const analysis = await extractInvoiceAnalysis(fileBuffer, modelKey);
 
-      const senderPromise = extractInvoiceSender(fileBuffer, modelKey).then(
-        async (senderResult) => {
-          await ctx.runMutation(internal.invoices.updateInvoiceSender, {
-            monthKey: args.monthKey,
-            storageId: args.storageId,
-            userId: args.userId,
-            sender: senderResult,
-          });
-          return senderResult;
-        }
-      );
-
-      const parsedTextPromise = extractTextFromPDF(fileBuffer, modelKey).then(
-        async (parsedTextResult) => {
-          await ctx.runMutation(internal.invoices.updateInvoiceParsedText, {
-            monthKey: args.monthKey,
-            storageId: args.storageId,
-            userId: args.userId,
-            parsedText: parsedTextResult,
-          });
-          return parsedTextResult;
-        }
-      );
-
-      const amountPromise = extractInvoiceAmount(fileBuffer, modelKey).then(
-        async (amountResult) => {
-          await ctx.runMutation(internal.invoices.updateInvoiceAmount, {
-            monthKey: args.monthKey,
-            storageId: args.storageId,
-            userId: args.userId,
-            amount: amountResult,
-          });
-          return amountResult;
-        }
-      );
-
-      // Wait for all to complete (for error handling)
       await Promise.all([
-        datePromise,
-        senderPromise,
-        parsedTextPromise,
-        amountPromise,
+        ctx.runMutation(internal.invoices.updateInvoiceDate, {
+          monthKey: args.monthKey,
+          storageId: args.storageId,
+          userId: args.userId,
+          date: analysis.date,
+        }),
+        ctx.runMutation(internal.invoices.updateInvoiceSender, {
+          monthKey: args.monthKey,
+          storageId: args.storageId,
+          userId: args.userId,
+          sender: analysis.sender,
+        }),
+        ctx.runMutation(internal.invoices.updateInvoiceParsedText, {
+          monthKey: args.monthKey,
+          storageId: args.storageId,
+          userId: args.userId,
+          parsedText: analysis.parsedText,
+        }),
+        ctx.runMutation(internal.invoices.updateInvoiceAmount, {
+          monthKey: args.monthKey,
+          storageId: args.storageId,
+          userId: args.userId,
+          amount: analysis.amount,
+        }),
       ]);
     } catch (error) {
       console.error("🔍 Error in invoice analysis (big error):", error);
@@ -153,28 +126,76 @@ const AI_MODELS = {
   gemini: google("gemini-3.5-flash"),
 } as const;
 
-async function askLLM(
-  prompt: string,
-  fileBuffer: ArrayBuffer,
-  modelKey: keyof typeof AI_MODELS = "gemini"
-): Promise<{
+type AnalysisResult = {
   value: string | null;
   error: string | null;
   lastUpdated: number;
-}> {
+};
+
+type InvoiceAnalysisExtraction = {
+  date: AnalysisResult;
+  sender: AnalysisResult;
+  parsedText: AnalysisResult;
+  amount: AnalysisResult;
+};
+
+const invoiceAnalysisSchema = z.object({
+  date: z
+    .string()
+    .nullable()
+    .describe("Invoice issue date in YYYY-MM-DD format, or null if absent."),
+  sender: z
+    .string()
+    .nullable()
+    .describe("Sender/vendor company or person name, or null if absent."),
+  parsedText: z
+    .string()
+    .nullable()
+    .describe(
+      "Complete readable document text as plain markdown with line breaks preserved, or null if unreadable.",
+    ),
+  amount: z.object({
+    value: z
+      .string()
+      .nullable()
+      .describe(
+        "Total invoice amount only, without currency, e.g. '50.80' or '10000'.",
+      ),
+    currency: z
+      .string()
+      .nullable()
+      .describe("ISO 4217 currency code, e.g. BGN, USD, EUR, or null."),
+  }),
+});
+
+async function extractInvoiceAnalysis(
+  fileBuffer: ArrayBuffer,
+  modelKey: keyof typeof AI_MODELS = "gemini",
+): Promise<InvoiceAnalysisExtraction> {
   const now = Date.now();
   try {
     const mediaType = detectFileType(fileBuffer);
 
-    const result = await generateText({
+    const result = await generateObject({
       model: AI_MODELS[modelKey],
+      schema: invoiceAnalysisSchema,
+      schemaName: "invoice_analysis",
+      schemaDescription:
+        "Structured fields extracted from an invoice document.",
       messages: [
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: prompt,
+              text: [
+                "Analyze this invoice document once and extract all requested fields.",
+                "Return null for any field that is not present or not readable.",
+                "The date must be YYYY-MM-DD.",
+                "The sender must be only the company or person name.",
+                "The parsedText field must contain the complete readable document text as plain markdown, preserving line breaks and structure.",
+                "For amount, return the total invoice amount and ISO 4217 currency as separate fields. Do not combine them.",
+              ].join(" "),
             },
             {
               type: "file",
@@ -186,78 +207,52 @@ async function askLLM(
       ],
     });
 
-    const content = result.text.trim();
+    const analysis = result.object;
     return {
-      value: content === "null" || !content ? null : content,
-      error: null,
-      lastUpdated: now,
+      date: toAnalysisResult(analysis.date, now),
+      sender: toAnalysisResult(analysis.sender, now),
+      parsedText: toAnalysisResult(analysis.parsedText, now),
+      amount: toAnalysisResult(formatAmountProtocol(analysis.amount), now),
     };
   } catch (error) {
     console.error("🤖 Error calling LLM:", error);
-    return {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const failedResult = {
       value: null,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage,
       lastUpdated: now,
+    };
+
+    return {
+      date: failedResult,
+      sender: failedResult,
+      parsedText: failedResult,
+      amount: failedResult,
     };
   }
 }
 
-async function extractInvoiceDate(
-  fileBuffer: ArrayBuffer,
-  modelKey: keyof typeof AI_MODELS = "gemini"
-): Promise<{
-  value: string | null;
-  error: string | null;
-  lastUpdated: number;
-}> {
-  return await askLLM(
-    "Extract the invoice issue date from this document. Return ONLY the date in YYYY-MM-DD format, or 'null' if no date is found. Do not include any other text.",
-    fileBuffer,
-    modelKey
-  );
+function toAnalysisResult(
+  value: string | null | undefined,
+  lastUpdated: number,
+): AnalysisResult {
+  const normalized = value?.trim() || null;
+  return {
+    value: normalized,
+    error: null,
+    lastUpdated,
+  };
 }
 
-async function extractInvoiceSender(
-  fileBuffer: ArrayBuffer,
-  modelKey: keyof typeof AI_MODELS = "gemini"
-): Promise<{
-  value: string | null;
-  error: string | null;
-  lastUpdated: number;
-}> {
-  return await askLLM(
-    "Extract the sender/vendor name from this invoice document. Return ONLY the company or person name, or 'null' if not found. Do not include any other text.",
-    fileBuffer,
-    modelKey
-  );
-}
+function formatAmountProtocol(
+  amount: z.infer<typeof invoiceAnalysisSchema>["amount"],
+): string | null {
+  const value = amount.value?.trim();
+  const currency = amount.currency?.trim().toUpperCase();
 
-async function extractTextFromPDF(
-  fileBuffer: ArrayBuffer,
-  modelKey: keyof typeof AI_MODELS = "gemini"
-): Promise<{
-  value: string | null;
-  error: string | null;
-  lastUpdated: number;
-}> {
-  return await askLLM(
-    "Extract all text content from this document. Return the complete text as plain markdown, preserving line breaks and structure. If the document contains no readable text, return 'null'.",
-    fileBuffer,
-    modelKey
-  );
-}
+  if (!value || !currency) {
+    return null;
+  }
 
-async function extractInvoiceAmount(
-  fileBuffer: ArrayBuffer,
-  modelKey: keyof typeof AI_MODELS = "gemini"
-): Promise<{
-  value: string | null;
-  error: string | null;
-  lastUpdated: number;
-}> {
-  return await askLLM(
-    "Extract the total invoice amount and currency from this document. Return ONLY the amount and currency in the format 'amount|currency' (e.g., '50.80|BGN', '10000|USD', '4.51|EUR'). If no amount is found, return 'null'. Do not include any other text.",
-    fileBuffer,
-    modelKey
-  );
+  return `${value}|${currency}`;
 }
