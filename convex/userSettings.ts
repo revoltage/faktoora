@@ -38,7 +38,9 @@ export const updateUserSettings = mutation({
     vatId: v.optional(v.string()),
     aiModel: v.optional(v.string()),
     accEmail: v.optional(v.string()),
-    manualTransactions: v.optional(v.string()),
+    currencyRates: v.optional(v.string()),
+    currencyRateDate: v.optional(v.string()),
+    invoiceHelperLinks: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -56,7 +58,9 @@ export const updateUserSettings = mutation({
         vatId: args.vatId,
         aiModel: args.aiModel,
         accEmail: args.accEmail,
-        manualTransactions: args.manualTransactions,
+        currencyRates: args.currencyRates,
+        currencyRateDate: args.currencyRateDate,
+        invoiceHelperLinks: args.invoiceHelperLinks,
         updatedAt: Date.now(),
       });
       return existingSettings._id;
@@ -66,7 +70,9 @@ export const updateUserSettings = mutation({
         vatId: args.vatId,
         aiModel: args.aiModel,
         accEmail: args.accEmail,
-        manualTransactions: args.manualTransactions,
+        currencyRates: args.currencyRates,
+        currencyRateDate: args.currencyRateDate,
+        invoiceHelperLinks: args.invoiceHelperLinks,
         updatedAt: Date.now(),
       });
     }

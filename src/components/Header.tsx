@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
   center?: ReactNode;
+  currentMonth: string;
   className?: string;
 }
 
-export function Header({ center, className = "" }: HeaderProps) {
+export function Header({ center, currentMonth, className = "" }: HeaderProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
@@ -42,6 +43,7 @@ export function Header({ center, className = "" }: HeaderProps) {
       </header>
       <SettingsModal
         isOpen={isSettingsOpen}
+        currentMonth={currentMonth}
         onClose={() => setIsSettingsOpen(false)}
       />
     </>

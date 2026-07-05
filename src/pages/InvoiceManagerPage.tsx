@@ -56,6 +56,7 @@ export function InvoiceManagerPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header
+        currentMonth={currentMonth}
         center={
           <div className="flex w-full max-w-xs sm:max-w-sm items-center justify-center gap-1 sm:gap-2 min-w-0">
             <Button
@@ -111,7 +112,8 @@ export function InvoiceManagerPageContent({
   const [uploadingInvoices, setUploadingInvoices] = useState<
     UploadingInvoice[]
   >([]);
-  const [selectedInvoice, setSelectedInvoice] = useState<IncomingInvoice | null>(null);
+  const [selectedInvoice, setSelectedInvoice] =
+    useState<IncomingInvoice | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const openInvoiceModal = (invoice: IncomingInvoice) => {
@@ -139,7 +141,10 @@ export function InvoiceManagerPageContent({
     }
   };
 
-  const handleUpdateInvoiceName = async (invoice: IncomingInvoice, name: string) => {
+  const handleUpdateInvoiceName = async (
+    invoice: IncomingInvoice,
+    name: string,
+  ) => {
     try {
       await updateInvoiceName({
         monthKey: currentMonth,
