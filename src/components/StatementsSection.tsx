@@ -44,6 +44,13 @@ export const StatementsSection = ({
   const statementInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  const computeFileHash = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  };
+
   const handleDeleteAllStatements = async () => {
     if (!deleteAllStatements) return;
     try {
@@ -56,6 +63,7 @@ export const StatementsSection = ({
 
   const handleUploadStatement = async (file: File, fileType: "pdf" | "csv") => {
     try {
+      const fileHash = await computeFileHash(file);
       const uploadUrl = await generateUploadUrl();
       const result = await fetch(uploadUrl, {
         method: "POST",
@@ -64,27 +72,33 @@ export const StatementsSection = ({
       });
       const { storageId } = await result.json();
 
-      // If it's a CSV file, read the content and process it
-      if (fileType === "csv") {
-        const csvContent = await file.text();
-        await addStatement({
-          monthKey,
-          storageId,
-          fileName: file.name,
-          fileType,
-          csvContent,
-        });
+      const addStatementResult =
+        fileType === "csv"
+          ? await addStatement({
+              monthKey,
+              storageId,
+              fileName: file.name,
+              fileType,
+              csvContent: await file.text(),
+              fileHash,
+            })
+          : await addStatement({
+              monthKey,
+              storageId,
+              fileName: file.name,
+              fileType,
+              fileHash,
+            });
+
+      if (addStatementResult.isDuplicate) {
+        toast.info(`Duplicate statement reused existing upload: ${file.name}`);
+      } else if (fileType === "csv") {
         toast.success(`📊 Processed CSV: ${file.name}`);
-      } else {
-        await addStatement({
-          monthKey,
-          storageId,
-          fileName: file.name,
-          fileType,
-        });
       }
-    } catch {
-      toast.error("Failed to upload statement");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to upload statement",
+      );
     }
   };
 
@@ -140,10 +154,11 @@ export const StatementsSection = ({
                       🗑️ Delete All Statements
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete all statement files for{" "}
-                      {formatMonthDisplay(monthKey)}? This will also remove all
-                      transaction data and invoice bindings. This action cannot
-                      be undone.
+                      Delete all statement files for{" "}
+                      {formatMonthDisplay(monthKey)}? This removes statement
+                      transaction data and their invoice bindings. Manual
+                      transactions and their bindings stay untouched. This
+                      action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -251,6 +266,11 @@ function StatementItem({
         <Badge className="uppercase text-[7px] bg-gray-200 text-gray-600 border-gray-200 px-1 py-0">
           {statement.fileType}
         </Badge>
+        {statement.isDuplicate && (
+          <Badge className="uppercase text-[7px] bg-yellow-100 text-yellow-700 border-yellow-200 px-1 py-0">
+            duplicate
+          </Badge>
+        )}
         <a
           href={statement.url || "#"}
           target="_blank"
