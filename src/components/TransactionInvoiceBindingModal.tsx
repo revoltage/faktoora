@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "convex/react";
+import { toast } from "sonner";
 
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -40,7 +41,7 @@ export function TransactionInvoiceBindingModal({
   );
 
   const handleBind = async (
-    invoiceStorageId: string | typeof NOT_NEEDED | null,
+    invoiceStorageId: Id<"_storage"> | typeof NOT_NEEDED | null,
   ) => {
     if (!transaction?.id) return;
 
@@ -48,14 +49,12 @@ export function TransactionInvoiceBindingModal({
       await bindTransaction({
         monthKey,
         transactionId: transaction.id,
-        invoiceStorageId: invoiceStorageId as
-          | Id<"_storage">
-          | typeof NOT_NEEDED
-          | null,
+        invoiceStorageId,
       });
       onClose();
     } catch (error) {
       console.error("🔗 Failed to bind transaction to invoice:", error);
+      toast.error("Failed to bind transaction to invoice");
     }
   };
 
