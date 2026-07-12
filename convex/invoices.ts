@@ -406,6 +406,13 @@ export const deleteStatement = mutation({
   },
 });
 
+/**
+ * Single persistence path for an invoice analysis outcome. Commits all four
+ * extracted fields plus the big-error state in one transaction (a partial
+ * extraction can no longer half-commit), and applies the sender-rename
+ * policy: adopt the analyzed sender as the invoice name only while the name
+ * is still the filename-derived default.
+ */
 export const updateInvoiceAnalysis = internalMutation({
   args: {
     monthKey: v.string(),
@@ -416,55 +423,6 @@ export const updateInvoiceAnalysis = internalMutation({
     parsedText: analysisResultValidator,
     amount: analysisResultValidator,
     analysisBigError: v.union(v.string(), v.null()),
-  },
-  handler: async (ctx, args) => {
-    await patchNormalizedInvoicesByStorageId(
-      ctx,
-      args.userId,
-      args.monthKey,
-      args.storageId,
-      () => ({
-        analysis: {
-          date: args.date,
-          sender: args.sender,
-          parsedText: args.parsedText,
-          amount: args.amount,
-          analysisBigError: args.analysisBigError,
-        },
-      }),
-    );
-  },
-});
-
-export const updateInvoiceDate = internalMutation({
-  args: {
-    monthKey: v.string(),
-    storageId: v.id("_storage"),
-    userId: v.id("users"),
-    date: analysisResultValidator,
-  },
-  handler: async (ctx, args) => {
-    await patchNormalizedInvoicesByStorageId(
-      ctx,
-      args.userId,
-      args.monthKey,
-      args.storageId,
-      (invoice) => ({
-        analysis: {
-          ...invoice.analysis,
-          date: args.date,
-        },
-      }),
-    );
-  },
-});
-
-export const updateInvoiceSender = internalMutation({
-  args: {
-    monthKey: v.string(),
-    storageId: v.id("_storage"),
-    userId: v.id("users"),
-    sender: analysisResultValidator,
   },
   handler: async (ctx, args) => {
     await patchNormalizedInvoicesByStorageId(
@@ -483,34 +441,14 @@ export const updateInvoiceSender = internalMutation({
         return {
           ...(shouldUseAnalyzedSender ? { name: analyzedSender } : {}),
           analysis: {
-            ...invoice.analysis,
+            date: args.date,
             sender: args.sender,
+            parsedText: args.parsedText,
+            amount: args.amount,
+            analysisBigError: args.analysisBigError,
           },
         };
       },
-    );
-  },
-});
-
-export const updateInvoiceParsedText = internalMutation({
-  args: {
-    monthKey: v.string(),
-    storageId: v.id("_storage"),
-    userId: v.id("users"),
-    parsedText: analysisResultValidator,
-  },
-  handler: async (ctx, args) => {
-    await patchNormalizedInvoicesByStorageId(
-      ctx,
-      args.userId,
-      args.monthKey,
-      args.storageId,
-      (invoice) => ({
-        analysis: {
-          ...invoice.analysis,
-          parsedText: args.parsedText,
-        },
-      }),
     );
   },
 });
@@ -541,29 +479,6 @@ export const updateInvoiceName = mutation({
     }
 
     await ctx.db.patch(invoice._id, { name: args.name });
-  },
-});
-
-export const updateInvoiceAmount = internalMutation({
-  args: {
-    monthKey: v.string(),
-    storageId: v.id("_storage"),
-    userId: v.id("users"),
-    amount: analysisResultValidator,
-  },
-  handler: async (ctx, args) => {
-    await patchNormalizedInvoicesByStorageId(
-      ctx,
-      args.userId,
-      args.monthKey,
-      args.storageId,
-      (invoice) => ({
-        analysis: {
-          ...invoice.analysis,
-          amount: args.amount,
-        },
-      }),
-    );
   },
 });
 

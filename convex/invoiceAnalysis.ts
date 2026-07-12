@@ -77,32 +77,18 @@ export const analyzeInvoice = internalAction({
 
       const analysis = await extractInvoiceAnalysis(fileBuffer, modelKey);
 
-      await Promise.all([
-        ctx.runMutation(internal.invoices.updateInvoiceDate, {
-          monthKey: args.monthKey,
-          storageId: args.storageId,
-          userId: args.userId,
-          date: analysis.date,
-        }),
-        ctx.runMutation(internal.invoices.updateInvoiceSender, {
-          monthKey: args.monthKey,
-          storageId: args.storageId,
-          userId: args.userId,
-          sender: analysis.sender,
-        }),
-        ctx.runMutation(internal.invoices.updateInvoiceParsedText, {
-          monthKey: args.monthKey,
-          storageId: args.storageId,
-          userId: args.userId,
-          parsedText: analysis.parsedText,
-        }),
-        ctx.runMutation(internal.invoices.updateInvoiceAmount, {
-          monthKey: args.monthKey,
-          storageId: args.storageId,
-          userId: args.userId,
-          amount: analysis.amount,
-        }),
-      ]);
+      // One mutation = one transaction: the extraction commits atomically,
+      // and a successful run clears any analysisBigError from a prior failure.
+      await ctx.runMutation(internal.invoices.updateInvoiceAnalysis, {
+        monthKey: args.monthKey,
+        storageId: args.storageId,
+        userId: args.userId,
+        date: analysis.date,
+        sender: analysis.sender,
+        parsedText: analysis.parsedText,
+        amount: analysis.amount,
+        analysisBigError: null,
+      });
     } catch (error) {
       console.error("🔍 Error in invoice analysis (big error):", error);
       const errorMessage =
