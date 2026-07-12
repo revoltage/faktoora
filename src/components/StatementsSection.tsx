@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatMonthDisplay } from "@/lib/dateFormat";
 import type { StatementDoc } from "@/lib/types";
+import { uploadFileToStorage } from "@/lib/storageUpload";
 
 type GenerateUploadUrlFn = () => Promise<string>;
 type DeleteAllStatementsFn = (args: { monthKey: string }) => Promise<unknown>;
@@ -44,13 +45,6 @@ export const StatementsSection = ({
   const statementInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const computeFileHash = async (file: File): Promise<string> => {
-    const arrayBuffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-  };
-
   const handleDeleteAllStatements = async () => {
     if (!deleteAllStatements) return;
     try {
@@ -63,14 +57,10 @@ export const StatementsSection = ({
 
   const handleUploadStatement = async (file: File, fileType: "pdf" | "csv") => {
     try {
-      const fileHash = await computeFileHash(file);
-      const uploadUrl = await generateUploadUrl();
-      const result = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      const { storageId } = await result.json();
+      const { storageId, fileHash } = await uploadFileToStorage(
+        file,
+        generateUploadUrl,
+      );
 
       const addStatementResult =
         fileType === "csv"

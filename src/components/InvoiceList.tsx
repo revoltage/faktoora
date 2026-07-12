@@ -22,6 +22,7 @@ import type {
   StorageId,
   TransactionBinding,
 } from "@/lib/types";
+import { uploadFileToStorage } from "@/lib/storageUpload";
 import { cn } from "@/lib/utils";
 
 interface UploadingInvoice {
@@ -149,13 +150,6 @@ export const InvoiceList = ({
     }
   };
 
-  const computeFileHash = async (file: File): Promise<string> => {
-    const arrayBuffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-  };
-
   const handleUploadInvoice = async (file: File) => {
     const uploadId = `upload-${Date.now()}-${Math.random()}`;
     const uploadingInvoice: UploadingInvoice = {
@@ -167,20 +161,10 @@ export const InvoiceList = ({
     onUploadingStateChange((prev) => [...prev, uploadingInvoice]);
 
     try {
-      let fileHash: string | undefined;
-      try {
-        fileHash = await computeFileHash(file);
-      } catch {
-        // Continue upload even if hashing fails
-      }
-
-      const uploadUrl = await generateUploadUrl();
-      const result = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      const { storageId } = await result.json();
+      const { storageId, fileHash } = await uploadFileToStorage(
+        file,
+        generateUploadUrl,
+      );
       await addIncomingInvoice({
         monthKey,
         storageId,
