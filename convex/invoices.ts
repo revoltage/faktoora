@@ -627,10 +627,6 @@ export const deleteAllStatements = mutation({
       statements.map((statement) => statement.storageId),
     );
 
-    for (const storageId of storageIds) {
-      await safeDeleteStorage(ctx, storageId);
-    }
-
     for (const row of statementTransactionRows) {
       await ctx.db.delete(row._id);
     }
@@ -645,6 +641,13 @@ export const deleteAllStatements = mutation({
       args.monthKey,
       transactionIds,
     );
+
+    // Storage deletion is not transactional with the DB: delete blobs only
+    // after every row mutation has been issued, so a failed mutation cannot
+    // roll back rows while leaving their storage already gone.
+    for (const storageId of storageIds) {
+      await safeDeleteStorage(ctx, storageId);
+    }
   },
 });
 
@@ -661,10 +664,6 @@ export const deleteAllInvoices = mutation({
     const invoices = await listNormalizedInvoices(ctx, userId, args.monthKey);
     const storageIds = new Set(invoices.map((invoice) => invoice.storageId));
 
-    for (const storageId of storageIds) {
-      await safeDeleteStorage(ctx, storageId);
-    }
-
     for (const invoice of invoices) {
       await ctx.db.delete(invoice._id);
     }
@@ -675,6 +674,10 @@ export const deleteAllInvoices = mutation({
       args.monthKey,
       storageIds,
     );
+
+    for (const storageId of storageIds) {
+      await safeDeleteStorage(ctx, storageId);
+    }
   },
 });
 
