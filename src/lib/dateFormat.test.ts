@@ -31,11 +31,11 @@ describe("date format helpers", () => {
     expect(monthKeyFromPath("2026-04")).toBe("2026-04");
   });
 
-  test("falls back to the current month for invalid paths", () => {
-    const now = new Date();
-    const expected = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  test("falls back to the previous month for invalid paths", () => {
+    const march = new Date(2026, 2, 15);
 
-    expect(monthKeyFromPath("/")).toBe(expected);
-    expect(monthKeyFromPath("/settings")).toBe(expected);
+    expect(monthKeyFromPath("/", march)).toBe("2026-02");
+    expect(monthKeyFromPath("/settings", march)).toBe("2026-02");
+    expect(monthKeyFromPath("/", new Date(2026, 0, 1))).toBe("2025-12");
   });
 });

@@ -3,30 +3,34 @@
  * (e.g. "March 2026").
  */
 export function formatMonthDisplay(monthKey: string): string {
-  const [year, month] = monthKey.split("-");
-  const date = new Date(parseInt(year), parseInt(month) - 1);
-  return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
+ const [year, month] = monthKey.split("-");
+ const date = new Date(parseInt(year), parseInt(month) - 1);
+ return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
 }
 
 /** Returns the current month as a YYYY-MM string. */
 export function currentMonthKey(now: Date = new Date()): string {
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+ return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
 const MONTH_KEY_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 /** True if the given string is a valid `YYYY-MM` month key. */
 export function isMonthKey(value: string): boolean {
-  return MONTH_KEY_RE.test(value);
+ return MONTH_KEY_RE.test(value);
 }
 
 /**
  * Extract the month key from `window.location.pathname`. Falls back to the
- * current month when the path is `/`, empty, or not a valid `YYYY-MM`.
+ * month before `now` when the path is `/`, empty, or not a valid `YYYY-MM`:
+ * the month people reconcile invoices for is the one that just closed.
  */
 export function monthKeyFromPath(
-  pathname: string = window.location.pathname,
+ pathname: string = window.location.pathname,
+ now: Date = new Date(),
 ): string {
-  const candidate = pathname.replace(/^\//, "");
-  return isMonthKey(candidate) ? candidate : currentMonthKey();
+ const candidate = pathname.replace(/^\//, "");
+ return isMonthKey(candidate)
+  ? candidate
+  : currentMonthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
 }
