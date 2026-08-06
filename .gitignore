@@ -27,3 +27,6 @@ dist-ssr
 package-lock.json
 
 .mock
+
+# Prod snapshot exports: real customer data, auth refresh tokens, stored files.
+.backups
