@@ -21,6 +21,7 @@ import type * as lib_fileType from "../lib/fileType.js";
 import type * as lib_pdfParser from "../lib/pdfParser.js";
 import type * as manualTransactions from "../manualTransactions.js";
 import type * as monthData from "../monthData.js";
+import type * as monthShift from "../monthShift.js";
 import type * as normalizedMonthStore from "../normalizedMonthStore.js";
 import type * as refundMatching from "../refundMatching.js";
 import type * as router from "../router.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   "lib/pdfParser": typeof lib_pdfParser;
   manualTransactions: typeof manualTransactions;
   monthData: typeof monthData;
+  monthShift: typeof monthShift;
   normalizedMonthStore: typeof normalizedMonthStore;
   refundMatching: typeof refundMatching;
   router: typeof router;
