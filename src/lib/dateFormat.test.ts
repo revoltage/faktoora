@@ -5,6 +5,7 @@ import {
   formatMonthDisplay,
   isMonthKey,
   monthKeyFromPath,
+  monthKeyOfInvoiceDate,
 } from "./dateFormat";
 
 describe("date format helpers", () => {
@@ -15,6 +16,22 @@ describe("date format helpers", () => {
   test("builds the current month key from a provided date", () => {
     expect(currentMonthKey(new Date(2026, 0, 5))).toBe("2026-01");
     expect(currentMonthKey(new Date(2026, 11, 31))).toBe("2026-12");
+  });
+
+  test("reads the month key off a parsed invoice date", () => {
+    expect(monthKeyOfInvoiceDate("2026-03-01")).toBe("2026-03");
+    expect(monthKeyOfInvoiceDate("2026-03-31")).toBe("2026-03");
+    expect(monthKeyOfInvoiceDate("2026-12-31T23:30:00Z")).toBe("2026-12");
+  });
+
+  test("falls back to date parsing for non-ISO invoice dates", () => {
+    expect(monthKeyOfInvoiceDate("March 15, 2026")).toBe("2026-03");
+  });
+
+  test("returns null for invoice dates it cannot place in a month", () => {
+    expect(monthKeyOfInvoiceDate("")).toBeNull();
+    expect(monthKeyOfInvoiceDate("not a date")).toBeNull();
+    expect(monthKeyOfInvoiceDate("2026-13-01")).toBeNull();
   });
 
   test("validates strict YYYY-MM month keys", () => {

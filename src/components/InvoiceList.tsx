@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAutoMatchProposals } from "@/hooks/useAutoMatchProposals";
-import { formatMonthDisplay } from "@/lib/dateFormat";
+import { formatMonthDisplay, monthKeyOfInvoiceDate } from "@/lib/dateFormat";
 import type {
   IncomingInvoice,
   StorageId,
@@ -348,6 +348,15 @@ export const InvoiceList = ({
             ))}
             {sortedInvoices.map((invoice) => {
               const isBound = isInvoiceBound(invoice);
+              const dateMonthKey = invoice.analysis.date.value
+                ? monthKeyOfInvoiceDate(invoice.analysis.date.value)
+                : null;
+              // Non-null only when the parsed date falls outside the month this
+              // invoice was uploaded for.
+              const mismatchedMonthKey =
+                dateMonthKey !== null && dateMonthKey !== monthKey
+                  ? dateMonthKey
+                  : null;
               return (
                 <div
                   key={
@@ -380,7 +389,22 @@ export const InvoiceList = ({
                             </span>
                           )}
 
-                          <span className="text-[9px] text-muted-foreground whitespace-nowrap">
+                          <span
+                            className={cn(
+                              "text-[9px] text-muted-foreground whitespace-nowrap",
+                              // The pill's padding is cancelled by matching
+                              // negative margins, so its margin box stays
+                              // exactly the box the plain date occupied and
+                              // nothing around it shifts.
+                              mismatchedMonthKey !== null &&
+                                "font-bold text-amber-900 bg-amber-200 ring-1 ring-amber-400 rounded-full px-1 -mx-1 py-0.5 -my-0.5",
+                            )}
+                            title={
+                              mismatchedMonthKey !== null
+                                ? `Invoice is dated ${formatMonthDisplay(mismatchedMonthKey)} but was uploaded for ${formatMonthDisplay(monthKey)}`
+                                : undefined
+                            }
+                          >
                             {invoice.analysis.date.error ? (
                               <span
                                 className="text-red-600 cursor-pointer"
@@ -456,14 +480,10 @@ export const InvoiceList = ({
                         </span>
                       </div>
 
-                      {/* Tiny row: Filename + Uploaded at + Parse status on left, VAT Status on right */}
+                      {/* Tiny row: Filename + Parse status on left, VAT Status on right */}
                       <div className="flex items-center justify-between text-[9px] text-muted-foreground">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <span className="truncate">{invoice.fileName}</span>
-                          <span>•</span>
-                          <span className="whitespace-nowrap">
-                            {formatInvoiceDate(invoice.uploadedAt)}
-                          </span>
                           <span>•</span>
                           <span className="flex items-center gap-1">
                             {/* Classic Parsing Status */}
