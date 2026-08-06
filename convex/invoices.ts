@@ -647,3 +647,78 @@ export const bindTransactionToInvoice = mutation({
     });
   },
 });
+
+/**
+ * Bind many transaction/invoice pairs in one transaction. Same dedupe
+ * semantics as `bindTransactionToInvoice` (a transaction keeps at most one
+ * binding, an invoice is claimed by at most one transaction), applied in a
+ * single pass so the bulk auto-matcher does not fan out N round trips with N
+ * partial-failure points.
+ */
+export const bindTransactionsToInvoices = mutation({
+  args: {
+    monthKey: v.string(),
+    bindings: v.array(
+      v.object({
+        transactionId: v.string(),
+        invoiceStorageId: v.id("_storage"),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Defensive: keep the first pair for any transaction or invoice that shows
+    // up twice so a malformed request cannot break the 1:1 invariant.
+    const claimedTransactionIds = new Set<string>();
+    const claimedInvoiceStorageIds = new Set<string>();
+    const bindings = args.bindings.filter((binding) => {
+      if (
+        claimedTransactionIds.has(binding.transactionId) ||
+        claimedInvoiceStorageIds.has(binding.invoiceStorageId)
+      ) {
+        return false;
+      }
+      claimedTransactionIds.add(binding.transactionId);
+      claimedInvoiceStorageIds.add(binding.invoiceStorageId);
+      return true;
+    });
+
+    if (bindings.length === 0) {
+      return 0;
+    }
+
+    const existingBindings = await ctx.db
+      .query("transactionInvoiceBindings")
+      .withIndex("by_user_and_month", (q) =>
+        q.eq("userId", userId).eq("monthKey", args.monthKey),
+      )
+      .collect();
+
+    for (const binding of existingBindings) {
+      if (
+        claimedTransactionIds.has(binding.transactionId) ||
+        (binding.invoiceStorageId !== null &&
+          claimedInvoiceStorageIds.has(binding.invoiceStorageId))
+      ) {
+        await ctx.db.delete(binding._id);
+      }
+    }
+
+    const boundAt = Date.now();
+    for (const binding of bindings) {
+      await ctx.db.insert("transactionInvoiceBindings", {
+        userId,
+        monthKey: args.monthKey,
+        transactionId: binding.transactionId,
+        invoiceStorageId: binding.invoiceStorageId,
+        boundAt,
+      });
+    }
+
+    return bindings.length;
+  },
+});

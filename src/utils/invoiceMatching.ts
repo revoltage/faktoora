@@ -19,8 +19,11 @@ const SCORING_CONFIG = {
 /**
  * Simple fuzzy string similarity (0-1)
  * Uses token overlap and substring matching
+ *
+ * Exported so the bulk auto-matcher scores names with the exact same
+ * algorithm the single-transaction binding modal uses.
  */
-function fuzzyMatch(str1: string, str2: string): number {
+export function fuzzyMatch(str1: string, str2: string): number {
   if (!str1 || !str2) return 0;
 
   const s1 = str1.toLowerCase().trim();
