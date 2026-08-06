@@ -8,9 +8,28 @@ export function formatMonthDisplay(monthKey: string): string {
  return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
 }
 
+/** Returns the `YYYY-MM` month key the given date falls in. */
+export function monthKeyOf(date: Date): string {
+ return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
 /** Returns the current month as a YYYY-MM string. */
 export function currentMonthKey(now: Date = new Date()): string {
- return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+ return monthKeyOf(now);
+}
+
+/**
+ * Month key of a parsed invoice date (nominally `YYYY-MM-DD`), or `null` when
+ * the value cannot be placed in a month. A valid `YYYY-MM` prefix is trusted
+ * verbatim so a timezone shift can never move an invoice into a neighbouring
+ * month; anything else falls back to `Date` parsing.
+ */
+export function monthKeyOfInvoiceDate(value: string): string | null {
+ const prefix = value.slice(0, 7);
+ if (isMonthKey(prefix)) return prefix;
+
+ const parsed = new Date(value);
+ return Number.isNaN(parsed.getTime()) ? null : monthKeyOf(parsed);
 }
 
 const MONTH_KEY_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
