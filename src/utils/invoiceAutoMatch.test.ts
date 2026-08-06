@@ -15,6 +15,7 @@ function tx(
     amount: "-100.00",
     paymentCurrency: "EUR",
     description: "Acme Cloud",
+    dateCompleted: "2026-01-10",
     ...overrides,
   };
 }
@@ -29,6 +30,7 @@ function invoice(
     analysis: {
       amount: { value: "100.00|EUR" },
       sender: { value: null },
+      date: { value: null },
       ...analysis,
     },
   };
@@ -196,6 +198,107 @@ describe("buildAutoMatchProposals", () => {
     );
 
     expect(proposals).toEqual([]);
+  });
+
+  test("date proximity breaks a tie the name and amount cannot", () => {
+    // The real hazard: a vendor billing the same amount every month, with
+    // several of those invoices uploaded into one month.
+    const proposals = buildAutoMatchProposals(
+      [tx({ id: "t1", description: "Convex", dateCompleted: "2026-08-02" })],
+      [
+        invoice({
+          storageId: "iJuly",
+          name: "Convex",
+          analysis: { date: { value: "2026-07-01" } },
+        }),
+        invoice({
+          storageId: "iAugust",
+          name: "Convex",
+          analysis: { date: { value: "2026-08-01" } },
+        }),
+      ],
+    );
+
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0].invoice.storageId).toBe("iAugust");
+    expect(proposals[0].dateDistanceDays).toBe(1);
+    expect(proposals[0].ambiguous).toBe(false);
+  });
+
+  test("a dated invoice beats an undated one, never the reverse", () => {
+    const proposals = buildAutoMatchProposals(
+      [tx({ id: "t1", description: "Convex", dateCompleted: "2026-08-02" })],
+      [
+        invoice({ storageId: "iUndated", name: "Convex" }),
+        invoice({
+          storageId: "iDated",
+          name: "Convex",
+          analysis: { date: { value: "2026-08-20" } },
+        }),
+      ],
+    );
+
+    expect(proposals[0].invoice.storageId).toBe("iDated");
+  });
+
+  test("flags the pair as ambiguous when an equally good rival is stranded", () => {
+    // Two identical invoices, one transaction: whichever wins is a coin flip.
+    const proposals = buildAutoMatchProposals(
+      [tx({ id: "t1", description: "Convex", dateCompleted: "2026-08-02" })],
+      [
+        invoice({
+          storageId: "iA",
+          name: "Convex",
+          analysis: { date: { value: "2026-07-31" } },
+        }),
+        invoice({
+          storageId: "iB",
+          name: "Convex",
+          analysis: { date: { value: "2026-07-31" } },
+        }),
+      ],
+    );
+
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0].kind).toBe("exact");
+    expect(proposals[0].ambiguous).toBe(true);
+    expect(proposals[0].alternatives).toBe(1);
+  });
+
+  test("does not flag interchangeable pairs that all found a partner", () => {
+    // Two identical invoices AND two identical transactions: the permutation
+    // is arbitrary but binds the same set either way, so it is not a warning.
+    const proposals = buildAutoMatchProposals(
+      [
+        tx({ id: "t1", description: "Convex", dateCompleted: "2026-08-02" }),
+        tx({ id: "t2", description: "Convex", dateCompleted: "2026-08-02" }),
+      ],
+      [
+        invoice({
+          storageId: "iA",
+          name: "Convex",
+          analysis: { date: { value: "2026-07-31" } },
+        }),
+        invoice({
+          storageId: "iB",
+          name: "Convex",
+          analysis: { date: { value: "2026-07-31" } },
+        }),
+      ],
+    );
+
+    expect(proposals).toHaveLength(2);
+    expect(proposals.map((p) => p.ambiguous)).toEqual([false, false]);
+  });
+
+  test("oversupply never binds one invoice to two transactions", () => {
+    const proposals = buildAutoMatchProposals(
+      [tx({ id: "t1" }), tx({ id: "t2" })],
+      [invoice({ storageId: "i1", name: "Acme Cloud" })],
+    );
+
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0].ambiguous).toBe(true);
   });
 
   test("proposalKey identifies a pair uniquely", () => {

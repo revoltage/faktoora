@@ -5,9 +5,9 @@ import { fuzzyMatch } from "@/utils/invoiceMatching";
  * Bulk invoice <-> transaction auto-matching.
  *
  * Pure, deterministic, no network and no AI: every proposal is derived from
- * currency equality, amount equality and string similarity alone. The result
- * is 1:1 — a transaction and an invoice each appear at most once across the
- * whole proposal set.
+ * currency equality, amount equality, string similarity and date proximity.
+ * The result is 1:1 — a transaction and an invoice each appear at most once
+ * across the whole proposal set.
  */
 
 /**
@@ -22,6 +22,7 @@ export interface AutoMatchTransaction {
   amount?: string;
   paymentCurrency?: string;
   description?: string;
+  dateCompleted?: string;
   /** Truthy (incl. `"NOT_NEEDED"`) means the row is already resolved. */
   boundInvoiceStorageId?: string | null;
 }
@@ -33,6 +34,7 @@ export interface AutoMatchInvoice {
   analysis?: {
     sender?: { value?: string | null } | null;
     amount?: { value?: string | null } | null;
+    date?: { value?: string | null } | null;
   } | null;
 }
 
@@ -50,6 +52,15 @@ export interface AutoMatchProposal<T, I> {
   nameScore: number;
   /** Relative amount difference, 0 when the two amounts are identical. */
   amountDelta: number;
+  /** Days between invoice date and transaction date; `null` when undated. */
+  dateDistanceDays: number | null;
+  /**
+   * An equally-good alternative existed and lost out, so this pairing was
+   * picked arbitrarily. Never pre-selected in the UI.
+   */
+  ambiguous: boolean;
+  /** How many equally-good alternatives went unmatched. */
+  alternatives: number;
   /** The agreed amount (absolute) and currency of the pair. */
   amount: number;
   currency: string;
@@ -80,6 +91,31 @@ function parseTransactionAmount(value: string | undefined): number | null {
   return parsed;
 }
 
+const MS_PER_DAY = 86_400_000;
+
+/** Epoch ms for a `YYYY-MM-DD` date; `null` when absent or unparseable. */
+function parseDate(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+/**
+ * Two candidates rank identically, so choosing between them is a coin flip.
+ * Compared on every signal that orders the greedy pass.
+ */
+function isIndistinguishable(
+  a: AutoMatchProposal<unknown, unknown>,
+  b: AutoMatchProposal<unknown, unknown>,
+): boolean {
+  return (
+    a.kind === b.kind &&
+    a.nameScore === b.nameScore &&
+    a.dateDistanceDays === b.dateDistanceDays &&
+    a.amountDelta === b.amountDelta
+  );
+}
+
 export function proposalKey(proposal: {
   transaction: { id: string };
   invoice: { storageId: string };
@@ -98,8 +134,17 @@ export function proposalKey(proposal: {
  * far stronger signal.
  *
  * Conflicts are resolved greedily: candidates are ordered exact-first, then by
- * descending name similarity, then by closest amount, and each transaction and
- * invoice is consumed by the first candidate that claims it.
+ * descending name similarity, then by closest invoice date, then by closest
+ * amount, and each transaction and invoice is consumed by the first candidate
+ * that claims it.
+ *
+ * Date is a tiebreaker, never a gate: an invoice is routinely issued days
+ * before or after the payment clears, so distance cannot reject a pair. It
+ * only separates candidates that are otherwise identical — which happens a
+ * lot when a vendor bills the same amount every month.
+ *
+ * Where even the date cannot separate them, the winning pair is flagged
+ * `ambiguous` rather than silently presented as certain.
  */
 export function buildAutoMatchProposals<
   T extends AutoMatchTransaction,
@@ -118,6 +163,7 @@ export function buildAutoMatchProposals<
       amount: parseTransactionAmount(transaction.amount),
       currency: (transaction.paymentCurrency || "").trim().toUpperCase(),
       name: normalizeName(transaction.description),
+      date: parseDate(transaction.dateCompleted),
     }))
     .filter(
       (entry): entry is typeof entry & { amount: number } =>
@@ -134,6 +180,7 @@ export function buildAutoMatchProposals<
         currency: (parsed?.currency || "").trim().toUpperCase(),
         displayName: normalizeName(invoice.name || invoice.fileName),
         senderName: normalizeName(invoice.analysis?.sender?.value),
+        date: parseDate(invoice.analysis?.date?.value),
       };
     })
     .filter((entry) => entry.amount !== 0 && entry.currency !== "");
@@ -165,6 +212,12 @@ export function buildAutoMatchProposals<
         kind: isExact ? "exact" : "fuzzy",
         nameScore,
         amountDelta,
+        dateDistanceDays:
+          tx.date === null || inv.date === null
+            ? null
+            : Math.round(Math.abs(tx.date - inv.date) / MS_PER_DAY),
+        ambiguous: false,
+        alternatives: 0,
         amount: inv.amount,
         currency: inv.currency,
       });
@@ -174,6 +227,11 @@ export function buildAutoMatchProposals<
   candidates.sort((a, b) => {
     if (a.kind !== b.kind) return a.kind === "exact" ? -1 : 1;
     if (b.nameScore !== a.nameScore) return b.nameScore - a.nameScore;
+    // An undated invoice sorts behind every dated one rather than winning by
+    // default, so a real date always beats a missing one.
+    const aDate = a.dateDistanceDays ?? Number.POSITIVE_INFINITY;
+    const bDate = b.dateDistanceDays ?? Number.POSITIVE_INFINITY;
+    if (aDate !== bDate) return aDate - bDate;
     if (a.amountDelta !== b.amountDelta) return a.amountDelta - b.amountDelta;
     if (a.transaction.id !== b.transaction.id) {
       return a.transaction.id < b.transaction.id ? -1 : 1;
@@ -191,6 +249,32 @@ export function buildAutoMatchProposals<
     usedTransactions.add(candidate.transaction.id);
     usedInvoices.add(candidate.invoice.storageId);
     proposals.push(candidate);
+  }
+
+  // A pairing is only arbitrary if an equally-good alternative actually LOST
+  // OUT. When every tied alternative found a partner of its own, the greedy
+  // pass merely picked one permutation of interchangeable pairs and bound the
+  // same set either way — flagging that would be noise.
+  for (const proposal of proposals) {
+    let alternatives = 0;
+    for (const candidate of candidates) {
+      if (candidate === proposal) continue;
+      if (!isIndistinguishable(candidate, proposal)) continue;
+
+      const sharesTransaction =
+        candidate.transaction.id === proposal.transaction.id;
+      const sharesInvoice =
+        candidate.invoice.storageId === proposal.invoice.storageId;
+      if (!sharesTransaction && !sharesInvoice) continue;
+
+      const strandedRival = sharesTransaction
+        ? !usedInvoices.has(candidate.invoice.storageId)
+        : !usedTransactions.has(candidate.transaction.id);
+      if (strandedRival) alternatives += 1;
+    }
+
+    proposal.alternatives = alternatives;
+    proposal.ambiguous = alternatives > 0;
   }
 
   return proposals;

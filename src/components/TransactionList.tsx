@@ -1,10 +1,9 @@
 import { useQuery } from "convex/react";
 import { AlertCircle, CheckCircle, FileX, Minus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { api } from "../../convex/_generated/api";
 
-import { AutoMatchInvoicesModal } from "@/components/AutoMatchInvoicesModal";
 import { TransactionDetailsModal } from "@/components/TransactionDetailsModal";
 import {
   TransactionInvoiceBindingModal,
@@ -13,25 +12,9 @@ import {
 import { TransactionListFooter } from "@/components/TransactionListFooter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAutoMatchProposals } from "@/hooks/useAutoMatchProposals";
 import { getInvoiceHelperLinks } from "@/lib/transactionHelperLinks";
 import type { MergedTransaction } from "@/lib/types";
-
-const cfg = {
-  // Filtering constants
-  hidePositiveAmounts: true, // set to true to hide positive amounts
-  hideExchangeRows: true, // set to true to hide rows with exchangeRate filled
-  hideRevolutBusinessFee: true, // set to true to hide rows with description 'Revolut Business Fee'
-
-  // Allowed transaction types (uncomment to allow more)
-  allowedTransactionTypes: [
-    "CARD_PAYMENT",
-    "MANUAL",
-    // "FEE",
-    // "EXCHANGE",
-    // "TOPUP",
-  ],
-};
+import { transactionNeedsInvoice } from "@/lib/transactionNeedsInvoice";
 
 type TransactionListProps = {
   monthKey: string;
@@ -197,37 +180,6 @@ function TransactionRow({
   );
 }
 
-// Helper function to check if a transaction needs an invoice
-function transactionNeedsInvoice(transaction: MergedTransaction) {
-  // Refunded transactions don't need invoices
-  if (transaction.isRefunded) {
-    return false;
-  }
-
-  // Filter by allowed transaction types
-  if (!cfg.allowedTransactionTypes.includes(transaction.type)) {
-    return false;
-  }
-
-  if (cfg.hidePositiveAmounts && transaction.amount) {
-    const numAmount = parseFloat(transaction.amount);
-    if (!isNaN(numAmount) && numAmount > 0) return false;
-  }
-
-  if (cfg.hideExchangeRows && transaction.type === "EXCHANGE") {
-    return false;
-  }
-
-  if (
-    cfg.hideRevolutBusinessFee &&
-    transaction.description?.toLowerCase().includes("revolut business fee")
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
 export function TransactionList({
   monthKey,
   showOriginalAmount = false,
@@ -243,16 +195,6 @@ export function TransactionList({
   const [bindingTransaction, setBindingTransaction] =
     useState<MergedTransaction | null>(null);
   const [isBindingModalOpen, setIsBindingModalOpen] = useState(false);
-  const [isAutoMatchModalOpen, setIsAutoMatchModalOpen] = useState(false);
-  // Only rows that actually need an invoice are eligible for auto-matching.
-  const matchableTransactions = useMemo(
-    () => transactions?.filter(transactionNeedsInvoice),
-    [transactions],
-  );
-  const autoMatchProposals = useAutoMatchProposals(
-    monthKey,
-    matchableTransactions,
-  );
   const invoiceHelperLinks =
     userSettings &&
     "invoiceHelperLinks" in userSettings &&
@@ -411,15 +353,6 @@ export function TransactionList({
           >
             {showFiltered ? "Show All" : "Hide Non-Invoice"}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsAutoMatchModalOpen(true)}
-            disabled={autoMatchProposals.length === 0}
-            className="text-[10px] h-6 px-2"
-          >
-            Auto-match ({autoMatchProposals.length})
-          </Button>
         </div>
       </div>
 
@@ -467,13 +400,6 @@ export function TransactionList({
         isOpen={isBindingModalOpen}
         onClose={handleCloseBindingModal}
         monthKey={monthKey}
-      />
-
-      <AutoMatchInvoicesModal
-        isOpen={isAutoMatchModalOpen}
-        onClose={() => setIsAutoMatchModalOpen(false)}
-        monthKey={monthKey}
-        proposals={autoMatchProposals}
       />
     </div>
   );

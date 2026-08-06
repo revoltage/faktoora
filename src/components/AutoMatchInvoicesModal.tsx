@@ -62,19 +62,27 @@ function AutoMatchBody({
   onClose: () => void;
 }) {
   const bindTransactions = useMutation(api.invoices.bindTransactionsToInvoices);
-  // Exact pairs are pre-approved; fuzzy pairs need an explicit sign-off.
+  // Only unambiguous exact pairs are pre-approved. Anything a rival invoice
+  // matched equally well was picked arbitrarily, so it needs a human.
   const [selected, setSelected] = useState<Set<string>>(
     () =>
       new Set(
         proposals
-          .filter((proposal) => proposal.kind === "exact")
+          .filter(
+            (proposal) => proposal.kind === "exact" && !proposal.ambiguous,
+          )
           .map(proposalKey),
       ),
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const exact = proposals.filter((proposal) => proposal.kind === "exact");
-  const fuzzy = proposals.filter((proposal) => proposal.kind === "fuzzy");
+  const exact = proposals.filter(
+    (proposal) => proposal.kind === "exact" && !proposal.ambiguous,
+  );
+  const ambiguous = proposals.filter((proposal) => proposal.ambiguous);
+  const fuzzy = proposals.filter(
+    (proposal) => proposal.kind === "fuzzy" && !proposal.ambiguous,
+  );
   const allSelected =
     proposals.length > 0 && selected.size === proposals.length;
 
@@ -145,6 +153,13 @@ function AutoMatchBody({
             title="Exact"
             hint="same currency, amount and name"
             proposals={exact}
+            selected={selected}
+            onToggle={toggle}
+          />
+          <ProposalGroup
+            title="Ambiguous"
+            hint="another invoice fits just as well — this pick is arbitrary"
+            proposals={ambiguous}
             selected={selected}
             onToggle={toggle}
           />
@@ -258,6 +273,9 @@ function ProposalRow({
             ↳ {invoice.name || invoice.fileName}
           </div>
           <div className="text-[10px] text-gray-500">
+            {invoice.analysis?.date?.value ? (
+              <span>{invoice.analysis.date.value} · </span>
+            ) : null}
             {invoiceAmount ? (
               <span className="font-medium text-gray-700">
                 {invoiceAmount.replace("|", " ")}
@@ -266,6 +284,11 @@ function ProposalRow({
             {proposal.kind === "fuzzy" && (
               <span className="ml-1">
                 {Math.round(proposal.nameScore * 100)}% name match
+              </span>
+            )}
+            {proposal.ambiguous && (
+              <span className="ml-1 font-medium text-amber-700">
+                +{proposal.alternatives} equally good
               </span>
             )}
           </div>

@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { AutoMatchInvoicesModal } from "@/components/AutoMatchInvoicesModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAutoMatchProposals } from "@/hooks/useAutoMatchProposals";
 import { formatMonthDisplay } from "@/lib/dateFormat";
 import type {
   IncomingInvoice,
@@ -97,6 +99,8 @@ export const InvoiceList = ({
 }: InvoiceListProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
+  const [isAutoMatchOpen, setIsAutoMatchOpen] = useState(false);
+  const autoMatchProposals = useAutoMatchProposals(monthKey);
 
   // Create a set of bound invoice storage IDs
   const boundInvoiceIds = new Set(
@@ -300,6 +304,15 @@ export const InvoiceList = ({
               onClick={() => invoiceInputRef.current?.click()}
             >
               + Upload Invoice(s)
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-5 px-2 text-[10px] shadow-none"
+              onClick={() => setIsAutoMatchOpen(true)}
+              disabled={autoMatchProposals.length === 0}
+            >
+              Auto-match ({autoMatchProposals.length})
             </Button>
           </div>
         </CardTitle>
@@ -584,6 +597,13 @@ export const InvoiceList = ({
           </div>
         )}
       </CardContent>
+
+      <AutoMatchInvoicesModal
+        isOpen={isAutoMatchOpen}
+        onClose={() => setIsAutoMatchOpen(false)}
+        monthKey={monthKey}
+        proposals={autoMatchProposals}
+      />
     </Card>
   );
 };
