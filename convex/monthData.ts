@@ -49,6 +49,16 @@ export const statementTransactionValidator = v.object({
   spendProgram: v.string(),
 });
 
+// Documents migrated from the retired `months` pipeline still carry these
+// bookkeeping fields in deployments that never received the FKT-006 cleanup.
+// They are transitional: run `legacyFieldCleanup:stripLegacyFields` against
+// such a deployment, then delete these three lines and that module.
+const legacyMigrationFields = {
+  legacyKey: v.optional(v.string()),
+  legacyMonthId: v.optional(v.string()),
+  migratedAt: v.optional(v.number()),
+};
+
 export const normalizedInvoiceValidator = v.object({
   userId: v.id("users"),
   monthKey: v.string(),
@@ -62,6 +72,7 @@ export const normalizedInvoiceValidator = v.object({
   uploadedAt: v.number(),
   analysis: invoiceAnalysisValidator,
   parsing: invoiceParsingValidator,
+  ...legacyMigrationFields,
 });
 
 export const normalizedStatementValidator = v.object({
@@ -75,6 +86,10 @@ export const normalizedStatementValidator = v.object({
   isDuplicate: v.optional(v.boolean()),
   duplicateOfStorageId: v.optional(v.id("_storage")),
   uploadedAt: v.number(),
+  // Pre-FKT-006 statements embedded their rows instead of using
+  // `statementTransactions`. Transitional, same as `legacyMigrationFields`.
+  transactions: v.optional(v.array(statementTransactionValidator)),
+  ...legacyMigrationFields,
 });
 
 export const normalizedTransactionBindingValidator = v.object({
@@ -87,6 +102,7 @@ export const normalizedTransactionBindingValidator = v.object({
     v.null(),
   ),
   boundAt: v.number(),
+  ...legacyMigrationFields,
 });
 
 export function getFileNameWithoutExtension(fileName: string): string {
