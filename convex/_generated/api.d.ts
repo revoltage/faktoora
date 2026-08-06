@@ -16,6 +16,7 @@ import type * as invoiceAnalysis from "../invoiceAnalysis.js";
 import type * as invoiceParsing from "../invoiceParsing.js";
 import type * as invoiceParsingMutations from "../invoiceParsingMutations.js";
 import type * as invoices from "../invoices.js";
+import type * as legacyFieldCleanup from "../legacyFieldCleanup.js";
 import type * as lib_fileType from "../lib/fileType.js";
 import type * as lib_pdfParser from "../lib/pdfParser.js";
 import type * as manualTransactions from "../manualTransactions.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   invoiceParsing: typeof invoiceParsing;
   invoiceParsingMutations: typeof invoiceParsingMutations;
   invoices: typeof invoices;
+  legacyFieldCleanup: typeof legacyFieldCleanup;
   "lib/fileType": typeof lib_fileType;
   "lib/pdfParser": typeof lib_pdfParser;
   manualTransactions: typeof manualTransactions;

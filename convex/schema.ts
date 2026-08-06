@@ -17,6 +17,9 @@ const applicationTables = {
     currencyRateDate: v.optional(v.string()),
     accEmail: v.optional(v.string()),
     invoiceHelperLinks: v.optional(v.string()),
+    // Pre-FKT-010 free-text manual transactions. Transitional: migrated by
+    // `legacyFieldCleanup:migrateManualTransactions`, then removed here.
+    manualTransactions: v.optional(v.string()),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),
   featureFlags: defineTable({
