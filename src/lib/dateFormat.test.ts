@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   currentMonthKey,
   formatMonthDisplay,
+  gmailAttachmentSearchUrl,
   isMonthKey,
   monthKeyFromPath,
   monthKeyOfInvoiceDate,
@@ -16,6 +17,15 @@ describe("date format helpers", () => {
   test("builds the current month key from a provided date", () => {
     expect(currentMonthKey(new Date(2026, 0, 5))).toBe("2026-01");
     expect(currentMonthKey(new Date(2026, 11, 31))).toBe("2026-12");
+  });
+
+  test("builds the monthly Gmail attachment search range", () => {
+    expect(gmailAttachmentSearchUrl("2026-07")).toBe(
+      "https://mail.google.com/mail/u/0/#search/has%3Aattachment+after%3A2026%2F7%2F1+before%3A2026%2F8%2F3",
+    );
+    expect(gmailAttachmentSearchUrl("2026-12")).toBe(
+      "https://mail.google.com/mail/u/0/#search/has%3Aattachment+after%3A2026%2F12%2F1+before%3A2027%2F1%2F3",
+    );
   });
 
   test("reads the month key off a parsed invoice date", () => {

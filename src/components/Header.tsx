@@ -1,10 +1,11 @@
 import { ReactNode, useState } from "react";
 
-import { Settings } from "lucide-react";
+import { MailSearch, Settings } from "lucide-react";
 
 import { SettingsModal } from "@/components/SettingsModal";
 import { SignOutButton } from "@/components/SignOutButton";
 import { Button } from "@/components/ui/button";
+import { gmailAttachmentSearchUrl } from "@/lib/dateFormat";
 
 interface HeaderProps {
   center?: ReactNode;
@@ -29,6 +30,18 @@ export function Header({ center, currentMonth, className = "" }: HeaderProps) {
           {center}
         </div>
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          <Button variant="ghost" size="sm" asChild className="h-8 px-2">
+            <a
+              href={gmailAttachmentSearchUrl(currentMonth)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Search Gmail attachments for selected month"
+              title="Search Gmail attachments for selected month"
+            >
+              <MailSearch className="h-4 w-4" />
+              <span className="hidden sm:inline">Gmail</span>
+            </a>
+          </Button>
           <Button
             variant="ghost"
             size="icon"
