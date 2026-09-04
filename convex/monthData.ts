@@ -171,6 +171,14 @@ const statementTransactionColumns = [
 type StatementTransactionField =
   (typeof statementTransactionColumns)[number][1];
 
+const statementTransactionHeaderAliases: Partial<
+  Record<StatementTransactionField, readonly string[]>
+> = {
+  dateStarted: ["Date started (UTC)"],
+  dateCompleted: ["Date completed (UTC)"],
+  beneficiarySortCode: ["Beneficiary sort code or routing number"],
+};
+
 export function parseCsvTransactions(csvText: string) {
   const lines = csvText.split("\n").filter((line) => line.trim());
   if (lines.length < 2) return [];
@@ -181,9 +189,25 @@ export function parseCsvTransactions(csvText: string) {
     columnIndexes.set(headers[i].trim().toLowerCase(), i);
   }
 
-  const missingHeaders = statementTransactionColumns
-    .filter(([header]) => !columnIndexes.has(header.trim().toLowerCase()))
-    .map(([header]) => header);
+  const resolvedTransactionColumns: Array<
+    readonly [StatementTransactionField, number]
+  > = [];
+  const missingHeaders: string[] = [];
+  for (const [header, field] of statementTransactionColumns) {
+    let columnIndex = columnIndexes.get(header.trim().toLowerCase());
+    if (columnIndex === undefined) {
+      for (const alias of statementTransactionHeaderAliases[field] ?? []) {
+        columnIndex = columnIndexes.get(alias.trim().toLowerCase());
+        if (columnIndex !== undefined) break;
+      }
+    }
+
+    if (columnIndex === undefined) {
+      missingHeaders.push(header);
+    } else {
+      resolvedTransactionColumns.push([field, columnIndex]);
+    }
+  }
 
   if (missingHeaders.length > 0) {
     throw new Error(
@@ -199,8 +223,7 @@ export function parseCsvTransactions(csvText: string) {
 
     const values = parseCsvLine(line);
     const transaction = {} as Record<StatementTransactionField, string>;
-    for (const [header, field] of statementTransactionColumns) {
-      const columnIndex = columnIndexes.get(header.trim().toLowerCase())!;
+    for (const [field, columnIndex] of resolvedTransactionColumns) {
       transaction[field] = values[columnIndex] || "";
     }
     transactions.push(transaction);

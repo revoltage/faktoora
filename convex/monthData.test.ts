@@ -133,6 +133,31 @@ describe("parseCsvTransactions", () => {
     });
   });
 
+  test("accepts current Revolut header names", () => {
+    const currentHeaders = columns.map((column) => {
+      if (column === "Started Date") return "Date started (UTC)";
+      if (column === "Completed Date") return "Date completed (UTC)";
+      if (column === "Beneficiary Sort Code") {
+        return "Beneficiary sort code or routing number";
+      }
+      return column;
+    });
+    const currentRow = {
+      ...baseRow,
+      "Beneficiary Sort Code": "021000021",
+    };
+    const csv = [
+      csvLine(currentHeaders),
+      csvLine(columns.map((column) => currentRow[column])),
+    ].join("\n");
+
+    expect(parseCsvTransactions(csv)[0]).toMatchObject({
+      dateStarted: "2026-03-01 10:00:00",
+      dateCompleted: "2026-03-01 10:00:03",
+      beneficiarySortCode: "021000021",
+    });
+  });
+
   test("fails loudly when a required Amount header is missing", () => {
     const withoutAmount = columns.filter((column) => column !== "Amount");
 
