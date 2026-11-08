@@ -7,7 +7,7 @@ import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { groq } from "@ai-sdk/groq";
-import { google } from "@ai-sdk/google";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { FEATURE_FLAGS } from "./featureFlags";
 import { detectFileType } from "./lib/fileType";
 import { z } from "zod";
@@ -103,13 +103,17 @@ export const analyzeInvoice = internalAction({
   },
 });
 
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPEN_ROUTER_API_KEY,
+});
+
 const AI_MODELS = {
   claude: anthropic("claude-sonnet-4-5"),
   openai: openai("gpt-5-mini"),
   kimi: groq("moonshotai/kimi-k2-instruct-0905"),
   gptoss: groq("openai/gpt-oss-120b"),
   llama3: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
-  gemini: google("gemini-3.5-flash"),
+  gemini: openrouter("google/gemini-3.8-flash"),
 } as const;
 
 type AnalysisResult = {

@@ -47,7 +47,7 @@ const AI_MODELS = {
   kimi: "Kimi K2",
   gptoss: "GPT-OSS 120B",
   llama3: "Llama 4 Maverick",
-  gemini: "Gemini 3.5 Flash",
+  gemini: "Gemini 3.8 Flash",
 } as const;
 
 function createManualTransactionRow(
